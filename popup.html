@@ -2,26 +2,12 @@
 <html>
   <head>
     <title>Tree Swipe</title>
-    <style>
-      body {
-        width: 300px;
-        height: 600px;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      #email {
-        margin-bottom: 20px;
-      }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css"/>
   </head>
-  <body>
-    <div id="email">Loading...</div>
-    <button id="refresh">Refresh</button>
-    <button id="next">Next Email</button>
+  <body class="pa3 bg-black white">
+    <div id="email" class="mb4">Please click 'Refresh' to get started</div>
+    <button id="refresh" class="f6 link dim br2 bn ph3 pv2 mb2 dib white bg-dark-blue">Refresh</button>
+    <button id="next" class="f6 link dim br2 bn ph3 pv2 mb2 dib white bg-dark-green">Next Email</button>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
