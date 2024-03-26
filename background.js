@@ -1,14 +1,14 @@
-let threadIds = [];
+let messages = [];
 let currentIndex = -1;
 let responseSent = false;
-let threadsFetched = 0;
+let messagesFetched = 0;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === "refreshEmail" || request.action === "nextEmail") {
     // Authenticate the user and get an access token
     chrome.identity.getAuthToken({interactive: true}, function(token) {
       // Use the fetch API to make the request
-      fetch('https://www.googleapis.com/gmail/v1/users/me/threads?q=in:inbox&maxResults=20', {
+      fetch('https://www.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=20', {
         headers: {
           'Authorization': 'Bearer ' + token
         }
@@ -21,18 +21,27 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       })
       .then(data => {
         // Check if the response has the expected structure
-        if (!data.threads || data.threads.length === 0) {
+        if (!data.messages || data.messages.length === 0) {
           throw new Error('Unexpected response from the Gmail API');
         }
-        // Get the IDs of the threads
-        threadIds = data.threads.map(thread => thread.id);
+        // Get the IDs of the messages
+        messages = data.messages;
+        // Group messages by thread ID
+        let threads = {};
+        for (let message of messages) {
+          if (!threads[message.threadId]) {
+            threads[message.threadId] = message;
+          }
+        }
+        // Convert threads object to array
+        messages = Object.values(threads);
         // Increment the current index for "nextEmail" action
         if (request.action === "nextEmail") {
-          currentIndex = (currentIndex + 1) % threadIds.length;
+          currentIndex = (currentIndex + 1) % messages.length;
         } else {
           currentIndex = 0;
         }
-        return fetchThread();
+        return fetchMessage();
       })
       .catch(error => {
         console.error('Error:', error);
@@ -42,34 +51,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           }
       });
 
-      function fetchThread() {
-        if (threadsFetched >= 20) {
-          throw new Error('Reached maximum number of threads to fetch');
+      function fetchMessage() {
+        if (messagesFetched >= 20) {
+          throw new Error('Reached maximum number of messages to fetch');
         }
-        threadsFetched++;
-        return fetch('https://www.googleapis.com/gmail/v1/users/me/threads/' + threadIds[currentIndex], {
+        messagesFetched++;
+        return fetch('https://www.googleapis.com/gmail/v1/users/me/messages/' + messages[currentIndex].id + '?format=raw', {
           headers: {
             'Authorization': 'Bearer ' + token
-          }
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Gmail API request failed with status ' + response.status);
-          }
-          return response.json();
-        })
-        .then(thread => {
-          if (!thread.messages || thread.messages.length === 0) {
-            // This thread has no messages, fetch the next one
-            currentIndex = (currentIndex + 1) % threadIds.length;
-            return fetchThread();
-          } else {
-            // This thread has a message, fetch the message
-            return fetch('https://www.googleapis.com/gmail/v1/users/me/messages/' + thread.messages[0].id + '?format=raw', {
-              headers: {
-                'Authorization': 'Bearer ' + token
-              }
-            });
           }
         })
         .then(response => {
