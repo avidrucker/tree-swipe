@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Tree Swipe",
+  "version": "0.01",
+  "description": "A Chrome extension designed to help people quickly label and sort their email inboxes",
+  "permissions": [
+    "tabs",
+    "storage",
+    "identity",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://mail.google.com/"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
