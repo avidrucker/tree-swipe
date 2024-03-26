@@ -1,13 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html class="">
   <head>
     <title>Tree Swipe</title>
     <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css"/>
+    <link rel="stylesheet" href="styles.css"/>
   </head>
-  <body class="pa3 bg-black white">
-    <div id="email" class="mb4">Please click 'Refresh' to get started</div>
-    <button id="refresh" class="f6 link dim br2 bn ph3 pv2 mb2 dib white bg-dark-blue">Refresh</button>
-    <button id="next" class="f6 link dim br2 bn ph3 pv2 mb2 dib white bg-dark-green">Next Email</button>
+  <body class="pa3 bg-black white w-rem-24 h-rem-12">
+    <div class="pb2">
+      <button id="refresh" class="f6 link dim br2 bn ph3 pv2 dib white bg-dark-blue">Refresh</button>
+      <button id="next" class="f6 link dim br2 bn ph3 pv2 dib white bg-dark-green">Next Email</button>
+    </div>
+    <section>
+      <span id="instructions" class="">Please click 'Refresh' to get started</span>
+      <div id="from"></div>
+      <div id="subject"></div>
+      <div id="body"></div>
+    </section>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
