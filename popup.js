@@ -1,7 +1,31 @@
+function decodeMime(str) {
+    return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/g, function (_, charset, encoding, text) {
+        if (encoding === 'B') {
+            text = atob(text);
+        } else if (encoding === 'Q') {
+            text = text.replace(/_/g, ' ').replace(/=(\w{2})/g, function (_, hex) {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+        }
+        return decodeURIComponent(escape(text));
+    });
+}
+
+function atobOrOriginal(str) {
+    try {
+        return atob(str);
+    } catch (e) {
+        return str;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     var refreshButton = document.getElementById('refresh');
     var nextButton = document.getElementById('next');
-    var emailDiv = document.getElementById('email');
+    var instructionsDiv = document.getElementById('instructions');
+    var subjectDiv = document.getElementById('subject');
+    var fromDiv = document.getElementById('from');
+    var bodyDiv = document.getElementById('body');
 
     refreshButton.addEventListener('click', refreshEmail);
     nextButton.addEventListener('click', refreshEmail);
@@ -15,6 +39,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If there was an error, display it in the #email div
                 emailDiv.textContent = 'Error: ' + response.error;
             } else {
+
+                // console.log("response", response);
+
                 // Decode the raw data
                 // Convert base64 string to byte array
                 var raw = atob(response.email.raw.replace(/-/g, '+').replace(/_/g, '/'));
@@ -28,65 +55,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 // Extract the subject with regex from the entire email
                 var subjectMatch = decoded.match(/^Subject: (.*?)(?=\r\n)/m);
-                var subject = subjectMatch ? subjectMatch[1].substring(0, 40) : 'No subject';
+                var subject = subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject';
 
                 // Extract the from with regex from the entire email
                 var fromMatch = decoded.match(/^From: (.*?)(?=\r\n)/m);
                 var from = fromMatch ? fromMatch[1].substring(0, 40) : 'No from';
 
-                // console.log("decoded");
-                // console.log(decoded);
+                // Use the snippet value from the response as the body
+                var body = response.email.snippet ? response.email.snippet : 'Message body parsing unsuccessful';
 
-                // Extract the MIME boundary from the headers
-                var boundaryMatch = decoded.match(/boundary="(.*)"/);
-                var boundary = boundaryMatch ? boundaryMatch[1] : null;
+                // Replace HTML entities in the body
+                body = body.replace(/&#39;/g, "'");
 
-                if (boundary) {
-                    // Split the email by the MIME boundary
-                    var parts = decoded.split('--' + boundary);
-                    var headersPart = parts[0];
-
-                    // Extract the subject with regex from the entire email
-                    var subjectMatch = headersPart.match(/^Subject: (.*?)(?=\r\n)/m);
-                    var subject = subjectMatch ? subjectMatch[1].substring(0, 40) : 'No subject';
-
-                    var fromMatch = headersPart.match(/^From: (.*?)(?=\r\n)/m);
-                    var from = fromMatch ? fromMatch[1].substring(0, 40) : 'No from';
-
-                    // Find the part with the body
-                    var bodyPart = parts.find(part => part.includes('Content-Type: text/plain'));
-
-                    // Extract the body with regex
-                    var bodyMatch = bodyPart.match(/(?:\r\n){2}([\s\S]*)/);
-                    var body;
-                    if (bodyMatch) {
-                        try {
-                            // Always attempt to base64 decode the body
-                            body = atob(bodyMatch[1]).substring(0, 40);
-                        } catch (e) {
-                            // If decoding fails, use the original body
-                            body = bodyMatch[1].substring(0, 40);
-                        }
-                    } else {
-                        body = 'No body';
-                    }
-                    
-                    // If body is 'No body' or undefined, use the snippet value from the response as a placeholder
-                    if (body === 'No body' || body === undefined) {
-                        console.log("hi");
-                        body = response.email.snippet;
-                    }
-                    // Display the subject and body in the #email div
-                    emailDiv.textContent = 'From: ' + from + '\nSubject: ' + subject + '\nBody: ' + body;
-                } else {
-                    // If body is 'No body' or undefined, use the snippet value from the response as a placeholder
-                    if (body === 'No body' || body === undefined) {
-                        console.log("hey");
-                        body = response.email.snippet;
-                    }
-                    // Display the subject and body in the #email div
-                    emailDiv.textContent = 'From: ' + from + '\nSubject: ' + subject + '\nBody: ' + body;
-                }
+                // Display the subject and body in the #email div
+                instructionsDiv.textContent = '';
+                fromDiv.textContent = 'From: ' + from;
+                subjectDiv.textContent = 'Subject: ' + subject;
+                bodyDiv.textContent = 'Body: ' + body;
             }
         });
     }
