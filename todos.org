@@ -29,3 +29,4 @@
 ** Enhancements
 
 *** TODO Enhance body text display to be AI NLP summarized
+*** TODO Have the 'next' button not call any APIs and instead only display the next email thread in the list
