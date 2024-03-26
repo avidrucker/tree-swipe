@@ -1,0 +1,30 @@
+* TODOs
+
+** Visuals
+
+*** TODO When clicking on 'next email', ensure that extension window 
+ size does not change (ie. make a fixed window size that can accomdate
+ the buttons and text)
+
+** Functionality
+
+*** TODO Use thread snippet to display body preview text in extension window
+*** TODO Display email counter for number of email threads processed
+*** TODO Display first email thread on extension load
+*** TODO Remember in context the current email thread being
+ looked at so that if the extension is closed and reopened, 
+ the same email as before is still being displayed
+
+**** TODO Look into localstorage versus the current recommended alternative to localstorage, list pros/cons
+*** TODO Consistently display the body text of the email thread in the extension window
+ including emails that are written in HTML as well as plain text
+
+** Bugs
+
+*** FIX When clicking on 'next email', the extension window size changes (don't want this behavior)
+*** FIX When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
+*** FIX When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
+
+** Enhancements
+
+*** TODO Enhance body text display to be AI NLP summarized
