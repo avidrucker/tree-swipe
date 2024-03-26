@@ -8,7 +8,7 @@
 
 ** Functionality
 
-*** TODO Use thread snippet to display body preview text in extension window
+*** TODO Use thread snippet to display body preview text in extension window IF body text is not available
 *** TODO Display email counter for number of email threads processed
 *** TODO Display first email thread on extension load
 *** TODO Remember in context the current email thread being
@@ -22,8 +22,9 @@
 ** Bugs
 
 *** FIX When clicking on 'next email', the extension window size changes (don't want this behavior)
-*** FIX When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
-*** FIX When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
+*** DONE When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
+*** DONE When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
+*** FIX Some subjects are not yet correctly parsed and displayed (see email from Interfusion)
 
 ** Enhancements
 
