@@ -70,9 +70,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         body = 'No body';
                     }
+                    
+                    // If body is 'No body' or undefined, use the snippet value from the response as a placeholder
+                    if (body === 'No body' || body === undefined) {
+                        console.log("hi");
+                        body = response.email.snippet;
+                    }
                     // Display the subject and body in the #email div
                     emailDiv.textContent = 'From: ' + from + '\nSubject: ' + subject + '\nBody: ' + body;
                 } else {
+                    // If body is 'No body' or undefined, use the snippet value from the response as a placeholder
+                    if (body === 'No body' || body === undefined) {
+                        console.log("hey");
+                        body = response.email.snippet;
+                    }
                     // Display the subject and body in the #email div
                     emailDiv.textContent = 'From: ' + from + '\nSubject: ' + subject + '\nBody: ' + body;
                 }
