@@ -1,0 +1,32 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional Jest coverage directory
+/coverage
+
+# Output of the node.js interpreter, npm, yarn, etc.
+/*.log
+
+# dotenv environment variables file
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+package-lock.json
+yarn.lock
