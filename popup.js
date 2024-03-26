@@ -15,8 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If there was an error, display it in the #email div
                 emailDiv.textContent = 'Error: ' + response.error;
             } else {
-                // Log the raw data
-                // console.log(response.email.raw);
                 // Decode the raw data
                 // Convert base64 string to byte array
                 var raw = atob(response.email.raw.replace(/-/g, '+').replace(/_/g, '/'));
