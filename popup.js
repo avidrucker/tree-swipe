@@ -12,7 +12,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var refreshButton = document.getElementById('refresh');
     var nextButton = document.getElementById('next');
-    // var instructionsDiv = document.getElementById('instructions');
+    var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
     var bodyDiv = document.getElementById('body');
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // New function to update UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
+        instructionsDiv.textContent = '';
         subjectDiv.textContent = 'Subject: ' + (emailDetails.subject || 'No subject');
         fromDiv.textContent = 'From: ' + (emailDetails.from || 'No from');
         bodyDiv.textContent = 'Body: ' + (emailDetails.body || 'Message body parsing unsuccessful');
