@@ -64,13 +64,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Decode byte array to string
                 var decoded = new TextDecoder("utf-8").decode(bytes);
                 
+                // console.log('Raw email data:', decoded);
+
                 // Extract the subject with regex from the entire email
                 var subjectMatch = decoded.match(/^Subject: (.*?)(?=\r\n)/m);
                 var subject = subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject';
 
                 // Extract the from with regex from the entire email
-                var fromMatch = decoded.match(/^From: (.*?)(?=\r\n)/m);
-                var from = fromMatch ? fromMatch[1].substring(0, 40) : 'No from';
+                var fromMatch = decoded.match(/^From:\s*((.|\n)*?)(?=\r\n)/m);
+                var from = fromMatch ? fromMatch[1].trim().substring(0, 40) : 'No from';
+
+                if (from === '' || from === undefined) {
+                    from = 'No sender information detected';
+                }
 
                 // Use the snippet value from the response as the body
                 var body = response.email.snippet ? response.email.snippet : 'Message body parsing unsuccessful';
