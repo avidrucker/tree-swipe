@@ -2,31 +2,44 @@
 
 ** Visuals
 
-*** TODO When clicking on 'next email', ensure that extension window 
+*** DONE When clicking on 'next email', ensure that extension window 
  size does not change (ie. make a fixed window size that can accomdate
  the buttons and text)
+*** TODO Implement initial screen that gives the user the choice of how
+ many email threads they want to review and label
+*** TODO Implement review screen that displays one email thread at a time
+ with buttons that enable the user to navigate to the next email thread
 
 ** Functionality
 
+*** TODO Add label to currently displayed email thread
 *** TODO Use thread snippet to display body preview text in extension window IF body text is not available
-*** TODO Display email counter for number of email threads processed
-*** TODO Display first email thread on extension load
-*** TODO Remember in context the current email thread being
+*** DONE Display email counter for number of email threads processed
+*** TODO Display first email thread on "review start"
+*** TODO Remember in context/storage the current email thread being
  looked at so that if the extension is closed and reopened, 
  the same email as before is still being displayed
-
-**** TODO Look into localstorage versus the current recommended alternative to localstorage, list pros/cons
+**** DONE Look into localstorage versus the current recommended alternative to localstorage, list pros/cons
 *** TODO Consistently display the body text of the email thread in the extension window
  including emails that are written in HTML as well as plain text
+*** DONE Add a 'next' button that will display the next email thread in the list
 
 ** Bugs
 
-*** FIX When clicking on 'next email', the extension window size changes (don't want this behavior)
+*** DONE When clicking on 'next email', the extension window size changes (don't want this behavior)
 *** DONE When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
 *** DONE When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
-*** FIX Some subjects are not yet correctly parsed and displayed (see email from Interfusion)
+*** DONE Some subjects are not yet correctly parsed and displayed (see email from Interfusion)
+*** FIX Japanese emails are not rendered correctly yet
+*** FIX Currently the extension requests a new auth token every time an action is taken. Instead,
+    the extension should request a new auth token only when the current token expires. This can
+    be done w/ a refresh token or by checking the expiration time of the current token.
+    Google typically returns a token expiration time in the response to the token request.
+    A day before the token is to expire, we can request a new token and update the current token.
+    This would be a critical fix for the extension to pass the review process.
 
 ** Enhancements
 
 *** TODO Enhance body text display to be AI NLP summarized
 *** TODO Have the 'next' button not call any APIs and instead only display the next email thread in the list
+*** TODO Add a 'reset' button that reinitializes extension to its initial state
