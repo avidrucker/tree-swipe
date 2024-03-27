@@ -83,6 +83,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Replace HTML entities in the body
                 body = body.replace(/&#39;/g, "'");
+                body = body.replace(/&quot;/g, '"');
+
 
                 // Display the subject and body in the #email div
                 instructionsDiv.textContent = '';
