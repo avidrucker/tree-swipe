@@ -30,6 +30,20 @@ document.addEventListener('DOMContentLoaded', function () {
         msgDiv.textContent = ''; // Clear any previous messages
     }
 
+    // // Function to request and display the current state
+    function loadState() {
+        chrome.runtime.sendMessage({ action: 'loadFromState' }, function(response) {
+            if (response.error) {
+                bodyDiv.textContent = 'Error: ' + response.error;
+            } else {
+                // Update the UI with the state details
+                let data = response.data;
+                let state = data.state;
+                updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
+            }
+        });
+    }
+
     // Function to request and display the current email data
     function refreshEmail(action) {
         chrome.runtime.sendMessage({ action: action }, function(response) {
@@ -53,4 +67,5 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshButton.addEventListener('click', () => refreshEmail('refreshEmail'));
     nextButton.addEventListener('click', () => refreshEmail('nextEmail'));
     applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
+    loadState();
 });

@@ -1,6 +1,31 @@
-let token = null;
-let messagesMetaInfo = [];
-let state = { currentIndex: 0, maxReviews: 10 };
+// Initialize global state
+let state = {
+  token: null,
+  messagesMetaInfo: [],
+  currentIndex: -1,
+  maxReviews: 10
+};
+
+// Load the state when the background script loads
+chrome.storage.local.get(['state'], function(result) {
+  console.log("attempting to load state...");
+  if (result.state) {
+    console.log("State loaded:", result.state);
+    state = result.state;
+    // Update the UI appropriately with the loaded state
+    
+  } else {
+    console.log("No state found, using default state");
+    state = { currentIndex: -1, maxReviews: 10, messagesMetaInfo: [], token: null };
+  }
+});
+
+// A function to save the current state
+function saveState() {
+  chrome.storage.local.set({ state }, function() {
+    console.log("State saved:", state);
+  });
+}
 
 function decodeMime(str) {
   return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/g, function (_, charset, encoding, text) {
@@ -21,11 +46,6 @@ function atobOrOriginal(str) {
   } catch (e) {
     return str;
   }
-}
-
-// Adding a new function to handle state queries
-function getCurrentState() {
-  return state;
 }
 
 /*
@@ -137,37 +157,44 @@ function getLabelId(token, labelName) {
   */
 function handleMessageRequest(action, sendResponse) {
   fetchAuthToken().then(t => {
-    token = t;
-    let state = getCurrentState();
+    state.token = t;
     if (action === "refreshEmail") {
-      fetchEmailList(token).then(messages => {
-        messagesMetaInfo = messages;
+      fetchEmailList(state.token).then(messages => {
+        state.messagesMetaInfo = messages;
         state.currentIndex = 0;
-        return fetchEmailDetails(token, messagesMetaInfo[state.currentIndex].id);
+        return fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id);
       })
-        .then(emailDetails => sendResponse({
-          data: { emailDetails, state },
-          type: "refreshEmail"
-        }))
+        .then(emailDetails => {
+          state.currentEmailDetails = emailDetails;
+          sendResponse({
+            data: { emailDetails, state },
+            type: "refreshEmail"
+          });
+        }).then(() => saveState())
         .catch(error => sendResponse({ error: error.message }));
+    } else if (action === "loadFromState") {
+      console.log("Loading from state...")
+      sendResponse({ data: { state }, type: "loadFromState" });
     } else if (action === "nextEmail") {
-      state.currentIndex = (state.currentIndex + 1) % messagesMetaInfo.length;
-      fetchEmailDetails(token, messagesMetaInfo[state.currentIndex].id)
-        .then(emailDetails => sendResponse({
-          data: { emailDetails, state },
-          type: "nextEmail"
-        }))
-        .catch(error => sendResponse({ error: error.message }));
+      state.currentIndex = (state.currentIndex + 1) % state.messagesMetaInfo.length;
+      fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+        .then(emailDetails => {
+          state.currentEmailDetails = emailDetails; // Save the current email details in the state
+          sendResponse({
+            data: { emailDetails, state },
+            type: "nextEmail"
+          });
+        }).then(() => saveState())
+        .catch(error => sendResponse({ error: error.message })); 
     } else if (action === "getState") {
-      const state = getCurrentState();
       sendResponse({ state });
     } else if (action === "applyReviewedLabel") {
       const labelName = 'Cheese';
-      getLabelId(token, labelName).then(labelId => {
+      getLabelId(state.token, labelName).then(labelId => {
         // Fetch the current message to check its labels
-        fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messagesMetaInfo[state.currentIndex].id}`, {
+        fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${state.messagesMetaInfo[state.currentIndex].id}`, {
           headers: {
-            'Authorization': 'Bearer ' + token
+            'Authorization': 'Bearer ' + state.token
           }
         })
         .then(response => response.json())
@@ -177,10 +204,10 @@ function handleMessageRequest(action, sendResponse) {
             sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyReviewedLabel" });
           } else {
             // Apply the label if it's not already applied
-            fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messagesMetaInfo[state.currentIndex].id}/modify`, {
+            fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${state.messagesMetaInfo[state.currentIndex].id}/modify`, {
               method: 'POST',
               headers: {
-                'Authorization': 'Bearer ' + token,
+                'Authorization': 'Bearer ' + state.token,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
@@ -203,7 +230,7 @@ function handleMessageRequest(action, sendResponse) {
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel") {
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState") {
     handleMessageRequest(action, sendResponse);
   } else {
     sendResponse({ error: "Invalid action" });
