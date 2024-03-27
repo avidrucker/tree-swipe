@@ -31,6 +31,7 @@ function atobOrOriginal(str) {
 document.addEventListener('DOMContentLoaded', function () {
     var refreshButton = document.getElementById('refresh');
     var nextButton = document.getElementById('next');
+    var debugButton = document.getElementById('debug');
     var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
@@ -39,8 +40,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var reviewCount = 0;
     var maxReviews = 10;
 
+    var currentEmailDetails = {}; // Store the current email details for debugging
+
     refreshButton.addEventListener('click', refreshEmail);
     nextButton.addEventListener('click', refreshEmail);
+    debugButton.addEventListener('click', function() {
+        console.log('Current Email Details:', currentEmailDetails); // Log the current email details
+    });
 
     function refreshEmail() {
         var action = this.id === 'refresh' ? 'refreshEmail' : 'nextEmail';
@@ -63,8 +69,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Decode byte array to string
                 var decoded = new TextDecoder("utf-8").decode(bytes);
-                
-                // console.log('Raw email data:', decoded);
 
                 // Extract the subject with regex from the entire email
                 var subjectMatch = decoded.match(/^Subject: (.*?)(?=\r\n)/m);
@@ -72,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Extract the from with regex from the entire email
                 var fromMatch = decoded.match(/^From:\s*((.|\n)*?)(?=\r\n)/m);
-                var from = fromMatch ? fromMatch[1].trim().substring(0, 40) : 'No from';
+                var from = fromMatch ? decodeMime(fromMatch[1]).trim().substring(0, 40) : 'No from';
 
                 if (from === '' || from === undefined) {
                     from = 'No sender information detected';
@@ -85,6 +89,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 body = body.replace(/&#39;/g, "'");
                 body = body.replace(/&quot;/g, '"');
 
+                // Update the currentEmailDetails object
+                currentEmailDetails = {
+                    decoded, // Note: This is the full decoded raw data; might want to exclude or handle differently
+                    from,
+                    subject,
+                    body,
+                    response
+                };
 
                 // Display the subject and body in the #email div
                 instructionsDiv.textContent = '';
