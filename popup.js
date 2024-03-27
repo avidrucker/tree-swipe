@@ -26,12 +26,17 @@ document.addEventListener('DOMContentLoaded', function () {
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
     var bodyDiv = document.getElementById('body');
+    var reviewCountDiv = document.getElementById('reviewCount');
+    var reviewCount = 0;
+    var maxReviews = 10;
 
     refreshButton.addEventListener('click', refreshEmail);
     nextButton.addEventListener('click', refreshEmail);
 
     function refreshEmail() {
         var action = this.id === 'refresh' ? 'refreshEmail' : 'nextEmail';
+
+        reviewCount = this.id === 'refresh' ? 1 : reviewCount + 1;
 
         // Send a message to the background script to refresh or get the next email
         chrome.runtime.sendMessage({ action: action }, function (response) {
@@ -69,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Display the subject and body in the #email div
                 instructionsDiv.textContent = '';
+                reviewCountDiv.textContent = 'Review count: ' + reviewCount + ' of ' + maxReviews;
                 fromDiv.textContent = 'From: ' + from;
                 subjectDiv.textContent = 'Subject: ' + subject;
                 bodyDiv.textContent = 'Body: ' + body;
