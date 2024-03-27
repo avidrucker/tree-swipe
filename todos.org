@@ -12,15 +12,14 @@
 
 ** Functionality
 
-*** TODO Add label to currently displayed email thread
-*** TODO Use thread snippet to display body preview text in extension window IF body text is not available
+*** DONE Add label to currently displayed email thread
 *** DONE Display email counter for number of email threads processed
 *** TODO Display first email thread on "review start"
 *** TODO Remember in context/storage the current email thread being
  looked at so that if the extension is closed and reopened, 
  the same email as before is still being displayed
 **** DONE Look into localstorage versus the current recommended alternative to localstorage, list pros/cons
-*** TODO Consistently display the body text of the email thread in the extension window
+*** DONE Consistently display the body text of the email thread in the extension window
  including emails that are written in HTML as well as plain text
 *** DONE Add a 'next' button that will display the next email thread in the list
 
@@ -43,3 +42,4 @@
 *** TODO Enhance body text display to be AI NLP summarized
 *** TODO Have the 'next' button not call any APIs and instead only display the next email thread in the list
 *** TODO Add a 'reset' button that reinitializes extension to its initial state
+*** TODO Use thread snippet to display body preview text in extension window IF body text is not available
