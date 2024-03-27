@@ -12,19 +12,22 @@
 document.addEventListener('DOMContentLoaded', function () {
     var refreshButton = document.getElementById('refresh');
     var nextButton = document.getElementById('next');
+    var applyLabelButton = document.getElementById('applyLabel');
     var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
     var bodyDiv = document.getElementById('body');
     var reviewCountDiv = document.getElementById('reviewCount');
+    var msgDiv = document.getElementById('msg');
 
     // New function to update UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
-        instructionsDiv.textContent = '';
+        instructionsDiv.textContent = ''; // Clear the instructions
         subjectDiv.textContent = 'Subject: ' + (emailDetails.subject || 'No subject');
         fromDiv.textContent = 'From: ' + (emailDetails.from || 'No from');
         bodyDiv.textContent = 'Body: ' + (emailDetails.body || 'Message body parsing unsuccessful');
         reviewCountDiv.textContent = `Review count: ${reviewCount + 1} of ${maxReviews}`;
+        msgDiv.textContent = ''; // Clear any previous messages
     }
 
     // Function to request and display the current email data
@@ -33,8 +36,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.error) {
                 bodyDiv.textContent = 'Error: ' + response.error;
             } else {
-                // Update the UI with the email details
-                updateUI(response.emailDetails, response.state.currentIndex, response.state.maxReviews);
+                if(response.type === 'applyReviewedLabel') {
+                    // Display a success message if the label was applied
+                    msgDiv.textContent = response.message;
+                } else {
+                    // Update the UI with the email details and review count
+                    let data = response.data;
+                    let state = data.state;
+                    updateUI(data.emailDetails, state.currentIndex, state.maxReviews);
+                }
             }
         });
     }
@@ -42,4 +52,5 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listeners for buttons
     refreshButton.addEventListener('click', () => refreshEmail('refreshEmail'));
     nextButton.addEventListener('click', () => refreshEmail('nextEmail'));
+    applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
 });

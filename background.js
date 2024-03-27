@@ -4,22 +4,22 @@ let state = { currentIndex: 0, maxReviews: 10 };
 
 function decodeMime(str) {
   return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/g, function (_, charset, encoding, text) {
-      if (encoding === 'B') {
-          text = atob(text);
-      } else if (encoding === 'Q') {
-          text = text.replace(/_/g, ' ').replace(/=(\w{2})/g, function (_, hex) {
-              return String.fromCharCode(parseInt(hex, 16));
-          });
-      }
-      return decodeURIComponent(escape(text));
+    if (encoding === 'B') {
+      text = atob(text);
+    } else if (encoding === 'Q') {
+      text = text.replace(/_/g, ' ').replace(/=(\w{2})/g, function (_, hex) {
+        return String.fromCharCode(parseInt(hex, 16));
+      });
+    }
+    return decodeURIComponent(escape(text));
   });
 }
 
 function atobOrOriginal(str) {
   try {
-      return atob(str);
+    return atob(str);
   } catch (e) {
-      return str;
+    return str;
   }
 }
 
@@ -71,26 +71,65 @@ function fetchEmailList(token) {
   */
 function fetchEmailDetails(token, messageId) {
   return fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=raw`, {
-      headers: { 'Authorization': 'Bearer ' + token }
+    headers: { 'Authorization': 'Bearer ' + token }
   })
-  .then(response => response.json())
-  .then(data => {
+    .then(response => response.json())
+    .then(data => {
       // Assuming data.raw contains the raw email
       var raw = atob(data.raw.replace(/-/g, '+').replace(/_/g, '/'));
       var decoded = new TextDecoder("utf-8").decode(new Uint8Array([...raw].map(char => char.charCodeAt(0))));
-      
+
       // Extract and decode subject, from, and prepare body snippet
       var subjectMatch = decoded.match(/^Subject: (.*?)(?=\r\n)/m);
       var fromMatch = decoded.match(/^From:\s*((.|\n)*?)(?=\r\n)/m);
-      
+
       var emailDetails = {
-          subject: subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject',
-          from: fromMatch ? decodeMime(fromMatch[1]).trim().substring(0, 40) : 'No from',
-          body: data.snippet ? data.snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"') : 'Message body parsing unsuccessful'
+        subject: subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject',
+        from: fromMatch ? decodeMime(fromMatch[1]).trim().substring(0, 40) : 'No from',
+        body: data.snippet ? data.snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"') : 'Message body parsing unsuccessful'
       };
 
       return emailDetails; // Pass the prepared details back for display
+    });
+}
+
+function createLabel(token, labelName) {
+  return fetch('https://www.googleapis.com/gmail/v1/users/me/labels', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: labelName,
+      labelListVisibility: 'labelShow',
+      messageListVisibility: 'show'
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.id) {
+      return data.id;
+    } else {
+      throw new Error(`Failed to create label: ${labelName}`);
+    }
   });
+}
+
+function getLabelId(token, labelName) {
+  return fetch('https://www.googleapis.com/gmail/v1/users/me/labels', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+    .then(response => response.json())
+    .then(data => {
+      const label = data.labels.find(label => label.name === labelName);
+      if (label) {
+        return label.id;
+      } else {
+        // Create the label if it's not found
+        return createLabel(token, labelName);
+      }
+    });
 }
 
 /*
@@ -106,19 +145,57 @@ function handleMessageRequest(action, sendResponse) {
         state.currentIndex = 0;
         return fetchEmailDetails(token, messagesMetaInfo[state.currentIndex].id);
       })
-        .then(emailDetails => sendResponse({ emailDetails, state}))
+        .then(emailDetails => sendResponse({
+          data: { emailDetails, state },
+          type: "refreshEmail"
+        }))
         .catch(error => sendResponse({ error: error.message }));
     } else if (action === "nextEmail") {
       state.currentIndex = (state.currentIndex + 1) % messagesMetaInfo.length;
       fetchEmailDetails(token, messagesMetaInfo[state.currentIndex].id)
-        .then(emailDetails => sendResponse({ emailDetails, state}))
+        .then(emailDetails => sendResponse({
+          data: { emailDetails, state },
+          type: "nextEmail"
+        }))
         .catch(error => sendResponse({ error: error.message }));
     } else if (action === "getState") {
-        const state = getCurrentState();
-        sendResponse({ state });
+      const state = getCurrentState();
+      sendResponse({ state });
+    } else if (action === "applyReviewedLabel") {
+      const labelName = 'Cheese';
+      getLabelId(token, labelName).then(labelId => {
+        // Fetch the current message to check its labels
+        fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messagesMetaInfo[state.currentIndex].id}`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(response => response.json())
+        .then(message => {
+          // Check if the label is already applied
+          if (message.labelIds.includes(labelId)) {
+            sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyReviewedLabel" });
+          } else {
+            // Apply the label if it's not already applied
+            fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messagesMetaInfo[state.currentIndex].id}/modify`, {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                addLabelIds: [labelId]
+              })
+            })
+            .then(() => sendResponse({ success: true, type: "applyReviewedLabel", message: `Label '${labelName}' has been successfully applied.` }))
+            .catch(error => sendResponse({ error: error.message }));
+          }
+        })
+        .catch(error => sendResponse({ error: error.message }));
+      }).catch(error => sendResponse({ error: error.message }));
+      return true; // indicates async response
     }
-  }).catch(error => sendResponse({ error: error.message }));
-  return true; // indicates async response
+  });
 }
 
 /*
@@ -126,7 +203,7 @@ function handleMessageRequest(action, sendResponse) {
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState") {
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel") {
     handleMessageRequest(action, sendResponse);
   } else {
     sendResponse({ error: "Invalid action" });
