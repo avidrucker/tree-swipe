@@ -39,6 +39,13 @@ document.addEventListener('DOMContentLoaded', function () {
         bodyDiv.textContent = 'Body: ' + (emailDetails.body || 'Message body parsing unsuccessful');
         reviewCountDiv.textContent = `Review count: ${reviewCount + 1} of ${maxReviews}`;
         msgDiv.textContent = ''; // Clear any previous messages
+
+        // If on the last review, change the 'next' button text to 'Finish'
+        if (reviewCount + 1 === maxReviews) {
+            nextButton.textContent = 'Finish';
+        } else {
+            nextButton.textContent = 'Next';
+        }
     }
 
     // // Function to request and display the current state
@@ -77,11 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 if(response.type === 'applyReviewedLabel') {
                     // Display a success message if the label was applied
                     msgDiv.textContent = response.message;
-                } else if (response.type === 'returnToSetup') {
+                } else if (response.type === 'returnToSetup' || response.type === 'finishReview') {
                     console.log("return to setup request detected");
                     // Toggle the display of the sections
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
+                    // Change the 'next' button text back to 'Next'
+                    nextButton.textContent = 'Next';
                 }
                  else {
                     console.log("refreshing email data, not returning to setup");
@@ -114,7 +123,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners for review buttons
     quitButton.addEventListener('click', () => refreshEmail('returnToSetup'));
-    nextButton.addEventListener('click', () => refreshEmail('nextEmail'));
+    nextButton.addEventListener('click', () => {
+        if (nextButton.textContent === 'Next') {
+            refreshEmail('nextEmail');
+        } else if (nextButton.textContent === 'Finish') {
+            refreshEmail('finishReview');
+        } else {
+            console.error('Invalid button text');
+        }
+    });
     applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
     
     // Event listeners for setup buttons
