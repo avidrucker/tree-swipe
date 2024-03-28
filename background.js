@@ -8,14 +8,14 @@ let state = {
 
 // Load the state when the background script loads
 chrome.storage.local.get(['state'], function(result) {
-  console.log("attempting to load state...");
+  // console.log("attempting to load state..."); // debugging
   if (result.state) {
-    console.log("State loaded:", result.state);
+    // console.log("State loaded:", result.state); // debugging
     state = result.state;
     // Update the UI appropriately with the loaded state
     
   } else {
-    console.log("No state found, using default state");
+    // console.log("No state found, using default state"); // debugging
     state = { currentIndex: -1, maxReviews: 10, messagesMetaInfo: [], token: null };
   }
 });
@@ -23,7 +23,7 @@ chrome.storage.local.get(['state'], function(result) {
 // A function to save the current state
 function saveState() {
   chrome.storage.local.set({ state }, function() {
-    console.log("State saved:", state);
+    // console.log("State saved:", state); // debugging
   });
 }
 
@@ -184,7 +184,7 @@ function handleMessageRequest(action, sendResponse) {
         }).then(() => saveState())
         .catch(error => sendResponse({ error: error.message }));
     } else if (action === "loadFromState") {
-      console.log("Loading from state...")
+      // console.log("Loading from state...")
       sendResponse({ data: { state }, type: "loadFromState" });
     } else if (action === "nextEmail") {
       state.currentIndex = (state.currentIndex + 1) % state.messagesMetaInfo.length;
