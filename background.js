@@ -3,7 +3,7 @@ let state = {
   token: null,
   messagesMetaInfo: [],
   currentIndex: -1,
-  maxReviews: 10
+  maxReviews: -1
 };
 
 // Load the state when the background script loads
@@ -16,7 +16,7 @@ chrome.storage.local.get(['state'], function(result) {
     
   } else {
     // console.log("No state found, using default state"); // debugging
-    state = { currentIndex: -1, maxReviews: 10, messagesMetaInfo: [], token: null };
+    state = { currentIndex: -1, maxReviews: -1, messagesMetaInfo: [], token: null };
   }
 });
 
@@ -228,7 +228,12 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
   .catch(error => sendResponse({ error: error.message }));
 }
 
-function handleMessageRequest(action, sendResponse) {
+function handleStartReviewSession(sendResponse, maxReviews) {
+  state.maxReviews = maxReviews;
+  handleRefreshEmail(sendResponse);
+}
+
+function handleMessageRequest(action, sendResponse, maxReviews) {
   fetchAuthToken().then(t => {
     state.token = t;
     if (action === "refreshEmail") {
@@ -241,6 +246,13 @@ function handleMessageRequest(action, sendResponse) {
       sendResponse({ state });
     } else if (action === "applyReviewedLabel") {
       handleApplyReviewedLabel(sendResponse);
+    } else if (action === "startReviewSession") {
+      handleStartReviewSession(sendResponse, maxReviews);
+    } else if (action === "returnToSetup") {
+      state = { currentIndex: -1, maxReviews: -1, messagesMetaInfo: [], token: state.token };
+      saveState();
+      console.log("state cleared:", state);
+      sendResponse({ type: "returnToSetup" });
     }
   });
 }
@@ -249,9 +261,9 @@ function handleMessageRequest(action, sendResponse) {
   * Listens for messages from the popup and content script.
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { action } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState") {
-    handleMessageRequest(action, sendResponse);
+  const { action, maxReviews } = request;
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup") {
+    handleMessageRequest(action, sendResponse, maxReviews);
   } else {
     sendResponse({ error: "Invalid action" });
   }

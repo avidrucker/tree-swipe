@@ -10,10 +10,11 @@
 */
 
 document.addEventListener('DOMContentLoaded', function () {
-    var refreshButton = document.getElementById('refresh');
+    // review screen elements
+    var quitButton = document.getElementById('quit');
     var nextButton = document.getElementById('next');
     var applyLabelButton = document.getElementById('applyLabel');
-    var instructionsDiv = document.getElementById('instructions');
+    // var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
     var bodyDiv = document.getElementById('body');
@@ -21,9 +22,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var msgDiv = document.getElementById('msg');
     var debugButton = document.getElementById('debug');
 
-    // New function to update UI based on current email data
+    // setup screen elements
+    var setupSection = document.getElementById('setupSection');
+    var reviewSection = document.getElementById('reviewSection');
+    var fiveButton = document.getElementById('five');
+    var tenButton = document.getElementById('ten');
+    var twentyButton = document.getElementById('twenty');
+    var fiftyButton = document.getElementById('fifty');
+    var setupMsg = document.getElementById('setupMsg');
+
+    // New function to update reviewing UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
-        instructionsDiv.textContent = ''; // Clear the instructions
+        // instructionsDiv.textContent = ''; // Clear the instructions
         subjectDiv.textContent = 'Subject: ' + (emailDetails.subject || 'No subject');
         fromDiv.textContent = 'From: ' + (emailDetails.from || 'No from');
         bodyDiv.textContent = 'Body: ' + (emailDetails.body || 'Message body parsing unsuccessful');
@@ -35,12 +45,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadState() {
         chrome.runtime.sendMessage({ action: 'loadFromState' }, function(response) {
             if (response.error) {
-                bodyDiv.textContent = 'Error: ' + response.error;
+                setupMsg.textContent = 'Error: ' + response.error;
+                // If there's an error, show the setup section
+                setupSection.classList.remove('dn');
+                reviewSection.classList.add('dn');
             } else {
-                // Update the UI with the state details
                 let data = response.data;
                 let state = data.state;
-                updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
+                // Check if the review data is valid
+                if (state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1) {
+                    // If the review data is valid, show the review section
+                    setupSection.classList.add('dn');
+                    reviewSection.classList.remove('dn');
+                    // Update the UI with the state details
+                    updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
+                } else {
+                    // If the review data is not valid, show the setup section
+                    setupSection.classList.remove('dn');
+                    reviewSection.classList.add('dn');
+                }
             }
         });
     }
@@ -54,7 +77,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 if(response.type === 'applyReviewedLabel') {
                     // Display a success message if the label was applied
                     msgDiv.textContent = response.message;
-                } else {
+                } else if (response.type === 'returnToSetup') {
+                    console.log("return to setup request detected");
+                    // Toggle the display of the sections
+                    setupSection.classList.remove('dn');
+                    reviewSection.classList.add('dn');
+                }
+                 else {
+                    console.log("refreshing email data, not returning to setup");
                     // Update the UI with the email details and review count
                     let data = response.data;
                     let state = data.state;
@@ -64,11 +94,35 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Event listeners for buttons
-    refreshButton.addEventListener('click', () => refreshEmail('refreshEmail'));
+    function startReviewSession(maxReviews) {
+        // Send a message to background.js to start the review session and initialize maxReviews
+        chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews: maxReviews }, function(response) {
+            if (response.error) {
+                setupMsg.textContent = 'Error: ' + response.error;
+            } else {
+                // Toggle the display of the sections
+                setupSection.classList.add('dn');
+                reviewSection.classList.remove('dn');
+                // Start the review session
+                // Update the UI with the email details and review count
+                let data = response.data;
+                let state = data.state;
+                updateUI(data.emailDetails, state.currentIndex, state.maxReviews);
+            }
+        });
+    }
+
+    // Event listeners for review buttons
+    quitButton.addEventListener('click', () => refreshEmail('returnToSetup'));
     nextButton.addEventListener('click', () => refreshEmail('nextEmail'));
     applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
     
+    // Event listeners for setup buttons
+    fiveButton.addEventListener('click', () => startReviewSession(5));
+    tenButton.addEventListener('click', () => startReviewSession(10));
+    twentyButton.addEventListener('click', () => startReviewSession(20));
+    fiftyButton.addEventListener('click', () => startReviewSession(50));
+
     // function that sends a message to the background script to console log the state
     debugButton.addEventListener('click', () => {
         chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
