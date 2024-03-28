@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var bodyDiv = document.getElementById('body');
     var reviewCountDiv = document.getElementById('reviewCount');
     var msgDiv = document.getElementById('msg');
+    var debugButton = document.getElementById('debug');
 
     // New function to update UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
@@ -67,5 +68,14 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshButton.addEventListener('click', () => refreshEmail('refreshEmail'));
     nextButton.addEventListener('click', () => refreshEmail('nextEmail'));
     applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
+    
+    // function that sends a message to the background script to console log the state
+    debugButton.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
+            console.log("response", response);
+        });
+    });
+
     loadState();
+    
 });
