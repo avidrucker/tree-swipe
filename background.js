@@ -271,6 +271,7 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
  * @param {Function} sendResponse - The callback function to send the response.
  */
 function applyPendingLabelsToEmail(emailId, labelsToApply, sendResponse) {
+  // TODO: replace individual label applying w/ batch applying of labels, see todos.org
   labelsToApply.forEach(labelName => {
     getLabelId(state.token, labelName).then(labelId => {
       applyLabelToMessage(state.token, emailId, labelId, labelName, sendResponse);
@@ -306,7 +307,11 @@ function handleStartReviewSession(sendResponse, maxReviews) {
  * @param {Array<string>} labels - The labels to be added.
  */
 function addLabelsToPendingForCurrentEmail(labels) {
-  state.idsAndTheirPendinglabels[state.messagesMetaInfo[state.currentIndex].id] = labels;
+  const currentEmailId = state.messagesMetaInfo[state.currentIndex].id;
+  const currentLabels = state.idsAndTheirPendinglabels[currentEmailId] || [];
+  
+  state.idsAndTheirPendinglabels[currentEmailId] = [...currentLabels, ...labels];
+  
   saveState();
 }
 
@@ -322,22 +327,19 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
-    } 
-    // else if (action === "applyReviewedLabel") {
-    //   handleApplyReviewedLabel(sendResponse);
-    // } 
-    else if (action === "startReviewSession") {
+    } else if (action === "applyReviewedLabel") {
+      addLabelsToPendingForCurrentEmail(["Cheese"]);
+    } else if (action === "startReviewSession") {
       handleStartReviewSession(sendResponse, maxReviews);
     } 
-    // quit and save early
+    // quit early w/o applying any labels
     else if (action === "returnToSetup") {
-      //// handleApplyAllLabels(sendResponse);
       state = { ...initialState, token: state.token };
       saveState();
       console.log("return to setup, state cleared:", state);
       sendResponse({ type: "returnToSetup" });
     } 
-    // finish review session, save, and quit
+    // finish review session, apply labels, and quit
     else if (action === "finishReview") {
       addLabelsToPendingForCurrentEmail(["Reviewed"]);
       handleApplyAllLabels(sendResponse);
