@@ -315,29 +315,73 @@ function addLabelsToPendingForCurrentEmail(labels) {
   saveState();
 }
 
+function batchRemoveLabels(labelId, messageIds) {
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
+  const requestBody = {
+      ids: messageIds,
+      removeLabelIds: [labelId]
+  };
+
+  return new Promise((resolve, reject) => {
+      fetch(url, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Bearer ${state.token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+          if (!response.ok) {
+              reject(`HTTP error! status: ${response.status}`);
+          }
+          // note: when successful, the response body is empty
+          if(response.status === 204) {
+            console.log("successful return from batchRemoveLabels");  
+            resolve();
+          }
+      })
+      .catch(error => {
+          reject(error);
+      });
+  });
+}
+
 function handleMessageRequest(action, sendResponse, maxReviews) {
   fetchAuthToken().then(t => {
     state.token = t;
     if (action === "refreshEmail") {
       handleRefreshEmail(sendResponse);
     } else if (action === "loadFromState") {
-      sendResponse({ data: { state }, type: "loadFromState" });
+      sendResponse({ data: { state }, type: action });
     } else if (action === "nextEmail") {
       addLabelsToPendingForCurrentEmail(["Reviewed"]);
       handleNextEmail(sendResponse);
+      // TODO: temporarily disable 'Next' button until next email is loaded
     } else if (action === "getState") {
       sendResponse({ state });
     } else if (action === "applyReviewedLabel") {
       addLabelsToPendingForCurrentEmail(["Cheese"]);
+      sendResponse({ type: "notification", message: "Say 'Cheese'!" });
     } else if (action === "startReviewSession") {
       handleStartReviewSession(sendResponse, maxReviews);
-    } 
+    } else if (action === "clearReviewedLabel") {
+      // debugger;
+      getLabelId(state.token, "Reviewed")
+        .then(labelId => {
+          let messageIds = state.messagesMetaInfo.map(message => message.id);
+          batchRemoveLabels(labelId, messageIds)
+            .then(() => sendResponse({ type: "notification", message: "Label 'Reviewed' cleared successfully." }))
+            .catch(error => sendResponse({ error: error.message }));
+        })
+    }
     // quit early w/o applying any labels
     else if (action === "returnToSetup") {
       state = { ...initialState, token: state.token };
       saveState();
       console.log("return to setup, state cleared:", state);
-      sendResponse({ type: "returnToSetup" });
+      sendResponse({ type: action });
     } 
     // finish review session, apply labels, and quit
     else if (action === "finishReview") {
@@ -346,7 +390,7 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
       saveState();
       console.log("finishing review session");
-      sendResponse({ type: "finishReview" });
+      sendResponse({ type: action });
     }
   });
 }
@@ -357,7 +401,7 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup" || action === "finishReview") {
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel") {
     handleMessageRequest(action, sendResponse, maxReviews);
   } else {
     sendResponse({ error: "Invalid action" });

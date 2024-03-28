@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var reviewCountDiv = document.getElementById('reviewCount');
     var msgDiv = document.getElementById('msg');
     var debugButton = document.getElementById('debug');
+    var clearButton = document.getElementById('clearReviewedLabels');
 
     // setup screen elements
     var setupSection = document.getElementById('setupSection');
@@ -43,8 +44,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // If on the last review, change the 'next' button text to 'Finish'
         if (reviewCount + 1 === maxReviews) {
             nextButton.textContent = 'Finish';
+            nextButton.title = 'Finish review session, apply labels, and return back to setup';
         } else {
             nextButton.textContent = 'Next';
+            nextButton.title = 'Go to the next email thread';
         }
     }
 
@@ -81,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.error) {
                 bodyDiv.textContent = 'Error: ' + response.error;
             } else {
-                if(response.type === 'applyReviewedLabel') {
+                if(response.type === 'notification') {
                     // Display a success message if the label was applied
                     msgDiv.textContent = response.message;
                 } else if (response.type === 'returnToSetup' || response.type === 'finishReview') {
@@ -95,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
                  else {
                     nextButton.disabled = false;
                     console.log("refreshing email data, not returning to setup");
+                    msgDiv.textContent = ''; // Clear any previous messages
                     // Update the UI with the email details and review count
                     let data = response.data;
                     let state = data.state;
@@ -135,6 +139,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
+
+    // Event listener for clear button
+    clearButton.addEventListener('click', () => refreshEmail('clearReviewedLabel'));
     
     // Event listeners for setup buttons
     fiveButton.addEventListener('click', () => startReviewSession(5));
