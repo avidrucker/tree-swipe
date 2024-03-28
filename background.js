@@ -163,75 +163,84 @@ function getLabelId(token, labelName) {
     });
 }
 
-/*
-  * Handles the refreshEmail, nextEmail, and getState actions.
-  */
+function handleRefreshEmail(sendResponse) {
+  fetchEmailList(state.token).then(messages => {
+    state.messagesMetaInfo = messages;
+    state.currentIndex = 0;
+    return fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id);
+  })
+    .then(emailDetails => {
+      state.currentEmailDetails = emailDetails;
+      sendResponse({
+        data: { emailDetails, state },
+        type: "refreshEmail"
+      });
+    }).then(() => saveState())
+    .catch(error => sendResponse({ error: error.message }));
+}
+
+function handleNextEmail(sendResponse) {
+  state.currentIndex = (state.currentIndex + 1) % state.messagesMetaInfo.length;
+  fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+    .then(emailDetails => {
+      state.currentEmailDetails = emailDetails;
+      sendResponse({
+        data: { emailDetails, state },
+        type: "nextEmail"
+      });
+    }).then(() => saveState())
+    .catch(error => sendResponse({ error: error.message }));
+}
+
+function handleApplyReviewedLabel(sendResponse) {
+  const labelName = 'Cheese';
+  getLabelId(state.token, labelName).then(labelId => {
+    applyLabelToMessage(state.token, state.messagesMetaInfo[state.currentIndex].id, labelId, labelName, sendResponse);
+  }).catch(error => sendResponse({ error: error.message }));
+  return true; // indicates async response
+}
+
+function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse) {
+  fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}`, {
+    headers: {
+      'Authorization': 'Bearer ' + token
+    }
+  })
+  .then(response => response.json())
+  .then(message => {
+    if (message.labelIds.includes(labelId)) {
+      sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyReviewedLabel" });
+    } else {
+      fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          addLabelIds: [labelId]
+        })
+      })
+      .then(() => sendResponse({ success: true, type: "applyReviewedLabel", message: `Label '${labelName}' has been successfully applied.` }))
+      .catch(error => sendResponse({ error: error.message }));
+    }
+  })
+  .catch(error => sendResponse({ error: error.message }));
+}
+
 function handleMessageRequest(action, sendResponse) {
   fetchAuthToken().then(t => {
     state.token = t;
     if (action === "refreshEmail") {
-      fetchEmailList(state.token).then(messages => {
-        state.messagesMetaInfo = messages;
-        state.currentIndex = 0;
-        return fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id);
-      })
-        .then(emailDetails => {
-          state.currentEmailDetails = emailDetails;
-          sendResponse({
-            data: { emailDetails, state },
-            type: "refreshEmail"
-          });
-        }).then(() => saveState())
-        .catch(error => sendResponse({ error: error.message }));
+      handleRefreshEmail(sendResponse);
     } else if (action === "loadFromState") {
-      // console.log("Loading from state...")
       sendResponse({ data: { state }, type: "loadFromState" });
     } else if (action === "nextEmail") {
-      state.currentIndex = (state.currentIndex + 1) % state.messagesMetaInfo.length;
-      fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
-        .then(emailDetails => {
-          state.currentEmailDetails = emailDetails; // Save the current email details in the state
-          sendResponse({
-            data: { emailDetails, state },
-            type: "nextEmail"
-          });
-        }).then(() => saveState())
-        .catch(error => sendResponse({ error: error.message })); 
+      handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
     } else if (action === "applyReviewedLabel") {
-      const labelName = 'Cheese';
-      getLabelId(state.token, labelName).then(labelId => {
-        // Fetch the current message to check its labels
-        fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${state.messagesMetaInfo[state.currentIndex].id}`, {
-          headers: {
-            'Authorization': 'Bearer ' + state.token
-          }
-        })
-        .then(response => response.json())
-        .then(message => {
-          // Check if the label is already applied
-          if (message.labelIds.includes(labelId)) {
-            sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyReviewedLabel" });
-          } else {
-            // Apply the label if it's not already applied
-            fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${state.messagesMetaInfo[state.currentIndex].id}/modify`, {
-              method: 'POST',
-              headers: {
-                'Authorization': 'Bearer ' + state.token,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                addLabelIds: [labelId]
-              })
-            })
-            .then(() => sendResponse({ success: true, type: "applyReviewedLabel", message: `Label '${labelName}' has been successfully applied.` }))
-            .catch(error => sendResponse({ error: error.message }));
-          }
-        })
-        .catch(error => sendResponse({ error: error.message }));
-      }).catch(error => sendResponse({ error: error.message }));
-      return true; // indicates async response
+      handleApplyReviewedLabel(sendResponse);
     }
   });
 }
