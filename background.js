@@ -28,17 +28,28 @@ function saveState() {
 }
 
 function decodeMime(str) {
-  return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/g, function (_, charset, encoding, text) {
-    if (encoding === 'B') {
-      text = atob(text);
-    } else if (encoding === 'Q') {
-      text = text.replace(/_/g, ' ').replace(/=(\w{2})/g, function (_, hex) {
-        return String.fromCharCode(parseInt(hex, 16));
-      });
+  return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/gi, function (_, charset, encoding, encodedText) {
+    let buffer;
+    if (encoding.toUpperCase() === 'B') {
+      buffer = atob(encodedText);
+    } else if (encoding.toUpperCase() === 'Q') {
+      // Replace underscore with spaces as per RFC 2047 Section 4.2.2 for 'Q' encoding
+      encodedText = encodedText.replace(/_/g, ' ');
+      // Decode quoted-printable encoding
+      buffer = encodedText.replace(/=([A-Fa-f0-9]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    } else {
+      return encodedText; // Unrecognized encoding
     }
-    return decodeURIComponent(escape(text));
+    try {
+      // Try decoding as UTF-8 if possible
+      return decodeURIComponent(escape(buffer));
+    } catch (e) {
+      // Fallback for characters not correctly encoded as UTF-8
+      return unescape(buffer);
+    }
   });
 }
+
 
 function atobOrOriginal(str) {
   try {
