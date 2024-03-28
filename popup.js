@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     nextButton.textContent = 'Next';
                 }
                  else {
+                    nextButton.disabled = false;
                     console.log("refreshing email data, not returning to setup");
                     // Update the UI with the email details and review count
                     let data = response.data;
@@ -124,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listeners for review buttons
     quitButton.addEventListener('click', () => refreshEmail('returnToSetup'));
     nextButton.addEventListener('click', () => {
+        this.disabled = true;
         if (nextButton.textContent === 'Next') {
             refreshEmail('nextEmail');
         } else if (nextButton.textContent === 'Finish') {
