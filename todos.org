@@ -13,8 +13,13 @@
  has reviewed up to the max review count for a given review session
 *** TODO Implement finished screen that tells the user how many emails
  they reviewed and gives them the option to start a new review session
+*** TODO enable the user to skip already reviewed emails
+*** TODO auto apply the reviewed label once an email is viewed
+*** TODO apply auto-fade after 5 seconds to the notification messages such as 'label already applied' etc.
+*** TODO count number of returned threads, use MIN of user selected maxReviewCount and numOfReturnedThreads as the new maxReviewCount
+*** TODO apply labels at the end of the review session
 
-** Functionality
+** Critical Functionality
 
 *** DONE Add label to currently displayed email thread
 *** DONE Display email counter for number of email threads processed
@@ -54,5 +59,13 @@
 
 ** Enhancements
 
+*** TODO tooltip/on-hover display of more info regarding what each label means as it pertains to each question, e.g. "reference means that the item in question is something you might want to refer back to later, but isn't itself an actionable item" (title attribute)
 *** TODO Enhance body text display to be AI NLP summarized
 *** TODO Use thread snippet to display body preview text in extension window IF body text is not available
+*** TODO implement "rm labels" convenience function that removes all of the labels associated with treeswipe for a given number of email threads (by default 10)
+
+** Stretch Goals
+
+*** TODO enable the user to input their own decision trees
+*** TODO enable hotkeys for answer questions
+*** TODO enable back button to go to the previous email thread
