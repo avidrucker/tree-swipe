@@ -1,3 +1,6 @@
+// import everything from treeswipe.js
+// import * as treeswipe from './treeswipe.js';
+
 const initialState = {
   token: null,
   currentEmailDetails: null,
@@ -10,8 +13,17 @@ const initialState = {
   maxReviews: -1
 };
 
+const initialReviewState = { currentQuestion: "a" };
+
+let reviewState = initialReviewState;
+
+function resetReviewState() {
+  reviewState = initialReviewState;
+}
+
 // Initialize global state
 let state = initialState;
+
 
 // Load the state when the background script loads
 chrome.storage.local.get(['state'], function(result) {
@@ -27,12 +39,14 @@ chrome.storage.local.get(['state'], function(result) {
   }
 });
 
+
 // A function to save the current state
 function saveState() {
   chrome.storage.local.set({ state }, function() {
     // console.log("State saved:", state); // debugging
   });
 }
+
 
 function decodeMime(str) {
   return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/gi, function (_, charset, encoding, encodedText) {
@@ -66,9 +80,11 @@ function atobOrOriginal(str) {
   }
 }
 
-/*
- * Fetches an OAuth 2.0 token using the Chrome Identity API.
-*/
+
+/**
+ * Fetches the authentication token using the chrome.identity API.
+ * @returns {Promise<string>} A promise that resolves with the authentication token.
+ */
 function fetchAuthToken() {
   return new Promise((resolve, reject) => {
     chrome.identity.getAuthToken({ interactive: true }, token => {
@@ -80,9 +96,13 @@ function fetchAuthToken() {
   });
 }
 
-/*
-  * Fetches a list of emails from the user's Gmail inbox.
-  */
+
+/**
+ * Fetches the list of emails from the Gmail API.
+ * @param {string} token - The access token for authentication.
+ * @returns {Promise<Array<Object>>} - A promise that resolves to an array of email messages.
+ * @throws {Error} - If no messages are found.
+ */
 function fetchEmailList(token) {
   return fetch('https://www.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=200', {
     headers: { 'Authorization': 'Bearer ' + token }
@@ -104,9 +124,13 @@ function fetchEmailList(token) {
     });
 }
 
-/*
-  * Fetches the details of a specific email message.
-  */
+
+/**
+ * Fetches email details from the Gmail API.
+ * @param {string} token - The access token for authentication.
+ * @param {string} messageId - The ID of the email message.
+ * @returns {Promise<Object>} - A promise that resolves to an object containing the email details.
+ */
 function fetchEmailDetails(token, messageId) {
   return fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=raw`, {
     headers: { 'Authorization': 'Bearer ' + token }
@@ -203,20 +227,27 @@ function handleRefreshEmail(sendResponse) {
     .then(emailDetails => {
       state.currentEmailDetails = emailDetails;
       sendResponse({
-        data: { emailDetails, state },
+        data: { state, reviewState },
         type: "refreshEmail"
       });
     }).then(() => saveState())
     .catch(error => sendResponse({ error: error.message }));
 }
 
+
+/**
+ * Handles the retrieval of the next email and sends the response.
+ *
+ * @param {Function} sendResponse - The function to send the response to the caller.
+ * @returns {void}
+ */
 function handleNextEmail(sendResponse) {
   state.currentIndex = (state.currentIndex + 1); //  % state.messagesMetaInfo.length
   fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
     .then(emailDetails => {
       state.currentEmailDetails = emailDetails;
       sendResponse({
-        data: { emailDetails, state },
+        data: { state, reviewState },
         type: "nextEmail"
       });
     }).then(() => saveState())
@@ -352,22 +383,24 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
   fetchAuthToken().then(t => {
     state.token = t;
     if (action === "refreshEmail") {
+      //resetReviewState();
       handleRefreshEmail(sendResponse);
     } else if (action === "loadFromState") {
-      sendResponse({ data: { state }, type: action });
+      resetReviewState();
+      sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "nextEmail") {
+      resetReviewState();
       addLabelsToPendingForCurrentEmail(["Reviewed"]);
       handleNextEmail(sendResponse);
-      // TODO: temporarily disable 'Next' button until next email is loaded
     } else if (action === "getState") {
       sendResponse({ state });
     } else if (action === "applyReviewedLabel") {
       addLabelsToPendingForCurrentEmail(["Cheese"]);
       sendResponse({ type: "notification", message: "Say 'Cheese'!" });
     } else if (action === "startReviewSession") {
-      handleStartReviewSession(sendResponse, maxReviews);
+      // anonymous function that passes in the response object and updates it with the startReviewSession action type
+      handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews);
     } else if (action === "clearReviewedLabel") {
-      // debugger;
       getLabelId(state.token, "Reviewed")
         .then(labelId => {
           let messageIds = state.messagesMetaInfo.map(message => message.id);
