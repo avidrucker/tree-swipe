@@ -5,6 +5,7 @@ importScripts("treeswipe.js");
 const initialState = {
   token: null,
   currentEmailDetails: null,
+  skipping: null,
   messagesMetaInfo: [],
   // map of ids to label array of labels to be applied to the thread
   idsAndTheirPendinglabels: {
@@ -331,7 +332,8 @@ function handleApplyAllLabels(sendResponse) {
   });
 }
 
-function handleStartReviewSession(sendResponse, maxReviews) {
+function handleStartReviewSession(sendResponse, maxReviews, skipping) {
+  state.skipping = skipping;
   state.maxReviews = maxReviews;
   handleRefreshEmail(sendResponse);
 }
@@ -383,7 +385,7 @@ function batchRemoveLabels(labelId, messageIds) {
   });
 }
 
-function handleMessageRequest(action, sendResponse, maxReviews) {
+function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
   fetchAuthToken().then(t => {
     state.token = t;
     if (action === "nextQuestionNo") {
@@ -440,7 +442,7 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
-      handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews);
+      handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping);
     } else if (action === "clearReviewedLabel") {
       getLabelId(state.token, "Reviewed")
         .then(labelId => {
@@ -465,6 +467,10 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       saveState();
       console.log("finishing review session");
       sendResponse({ type: action });
+    } else if (action === "updateSkipping") {
+      state.skipping = skipping;
+      saveState();
+      sendResponse({ data: { state, reviewState }, type: action })
     }
   });
 }
@@ -474,12 +480,13 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
   * Listens for messages from the popup and content script.
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { action, maxReviews } = request;
+  const { action, maxReviews, skipping } = request;
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
    action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
     action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || 
-    action === "nextQuestionNo" || action === "nextQuestionYes" || action === "applyCurrentNodeLabel") {
-    handleMessageRequest(action, sendResponse, maxReviews);
+    action === "nextQuestionNo" || action === "nextQuestionYes" || action === "applyCurrentNodeLabel" ||
+    action === "updateSkipping") {
+    handleMessageRequest(action, sendResponse, maxReviews, skipping);
   } else {
     sendResponse({ error: "Invalid action" });
   }
