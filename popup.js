@@ -1,14 +1,3 @@
-/*
- * This script is run when the popup is opened. 
- * The user can click the "Refresh" button to 
- * get a new email or the "Next" button to get 
- * the next email in the list. It sends a message 
- * to the background script to get the email data
- * as well as the current review counter and max 
- * review limit. It then updates the UI with the
- * email details and review count.
-*/
-
 document.addEventListener('DOMContentLoaded', function () {
     // review screen elements
     var quitButton = document.getElementById('quit');
@@ -22,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var msgDiv = document.getElementById('msg');
     var debugButton = document.getElementById('debug');
     var clearButton = document.getElementById('clearReviewedLabels');
+
+    // question and answer elements
+    var questionDiv = document.getElementById('question');
+    var noButton = document.getElementById('noBtn');
+    var yesButton = document.getElementById('yesBtn');
 
     // setup screen elements
     var setupSection = document.getElementById('setupSection');
@@ -53,77 +47,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // // Function to request and display the current state
     function loadState() {
-        chrome.runtime.sendMessage({ action: 'loadFromState' }, function(response) {
-            if (response.error) {
-                setupMsg.textContent = 'Error: ' + response.error;
-                // If there's an error, show the setup section
+        chrome.runtime.sendMessage({ action: 'loadFromState' }, responseFromBackgroundCallback);
+    }
+
+    
+    /**
+     * Handles the response received from the background script.
+     * @param {Object} response - The response object from the background script.
+     */
+    function responseFromBackgroundCallback(response) {
+        if (response.error) {
+            bodyDiv.textContent = 'Error: ' + response.error;
+        } else {
+            // displaying notifications
+            if(response.type === 'notification') {
+                msgDiv.textContent = response.message;
+            } 
+            // leaving review state
+            else if (response.type === 'returnToSetup' || response.type === 'finishReview') {
+                // console.log("return to setup request detected");
+                // Toggle the display of the sections
                 setupSection.classList.remove('dn');
                 reviewSection.classList.add('dn');
-            } else {
-                let data = response.data;
-                let state = data.state;
-                // Check if the review data is valid
-                if (state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1) {
-                    // If the review data is valid, show the review section
-                    setupSection.classList.add('dn');
-                    reviewSection.classList.remove('dn');
-                    // Update the UI with the state details
-                    updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
-                } else {
+                // Change the 'next' button text back to 'Next'
+                nextButton.textContent = 'Next';
+            }
+            // in reviewing state
+             else {
+                let state = response.data.state;
+                if (!(state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1)) {
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
+                    // console.log("review data is not valid, returning early");
+                    return;
                 }
+
+                // debugger
+                // console.log("response from popup.js", response);
+                if(response.type === 'loadFromState' || response.type === 'nextEmail' || response.type === 'startReviewSession') {
+                    // Toggle the display of the sections
+                    setupSection.classList.add('dn');
+                    reviewSection.classList.remove('dn');
+                    console.log("response", response);
+                    questionDiv.textContent = response.data.reviewState.currentQuestion;
+                }
+                nextButton.disabled = false;
+                console.log("refreshing email data, not returning to setup");
+                msgDiv.textContent = ''; // Clear any previous messages
+                // Update the UI with the email details and review count
+                updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
             }
-        });
+        }
     }
+
 
     // Function to request and display the current email data
     function refreshEmail(action) {
-        chrome.runtime.sendMessage({ action: action }, function(response) {
-            if (response.error) {
-                bodyDiv.textContent = 'Error: ' + response.error;
-            } else {
-                if(response.type === 'notification') {
-                    // Display a success message if the label was applied
-                    msgDiv.textContent = response.message;
-                } else if (response.type === 'returnToSetup' || response.type === 'finishReview') {
-                    console.log("return to setup request detected");
-                    // Toggle the display of the sections
-                    setupSection.classList.remove('dn');
-                    reviewSection.classList.add('dn');
-                    // Change the 'next' button text back to 'Next'
-                    nextButton.textContent = 'Next';
-                }
-                 else {
-                    nextButton.disabled = false;
-                    console.log("refreshing email data, not returning to setup");
-                    msgDiv.textContent = ''; // Clear any previous messages
-                    // Update the UI with the email details and review count
-                    let data = response.data;
-                    let state = data.state;
-                    updateUI(data.emailDetails, state.currentIndex, state.maxReviews);
-                }
-            }
-        });
+        chrome.runtime.sendMessage({ action: action }, responseFromBackgroundCallback);
     }
+
 
     function startReviewSession(maxReviews) {
         // Send a message to background.js to start the review session and initialize maxReviews
-        chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews: maxReviews }, function(response) {
-            if (response.error) {
-                setupMsg.textContent = 'Error: ' + response.error;
-            } else {
-                // Toggle the display of the sections
-                setupSection.classList.add('dn');
-                reviewSection.classList.remove('dn');
-                // Start the review session
-                // Update the UI with the email details and review count
-                let data = response.data;
-                let state = data.state;
-                updateUI(data.emailDetails, state.currentIndex, state.maxReviews);
-            }
-        });
+        chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews: maxReviews }, responseFromBackgroundCallback);
     }
 
     // Event listeners for review buttons
