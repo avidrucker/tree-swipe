@@ -1,5 +1,5 @@
 // import everything from treeswipe.js
-let treeswipe;
+let ts;
 importScripts("treeswipe.js");
 
 const initialState = {
@@ -14,9 +14,12 @@ const initialState = {
   maxReviews: -1
 };
 
-const initialReviewState = { currentQuestion: treeswipe.INITIAL_NODE, 
-                             questionText: treeswipe.getNodeText(treeswipe.INITIAL_NODE),
-                             isLeafNode: treeswipe.isLeafNode(treeswipe.INITIAL_NODE) };
+const initialReviewState = { currentQuestion: ts.INIT_NODE, 
+                             questionText: ts.getNodeText(ts.INIT_NODE),
+                             questionExplanation: ts.getQexplanation(ts.INIT_NODE),
+                             isLeafNode: ts.isLeafNode(ts.INIT_NODE),
+                             yesBtnTitle: ts.getNodeText(ts.getNextQ(ts.INIT_NODE, "yes")),
+                             noBtnTitle: ts.getNodeText(ts.getNextQ(ts.INIT_NODE, "no"))};
 
 let reviewState = initialReviewState;
 
@@ -384,18 +387,30 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
     state.token = t;
     if (action === "nextQuestionNo") {
       const { currentQuestion } = reviewState;
-      reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "no");
-      reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
+      reviewState.currentQuestion = ts.getNextQ(currentQuestion, "no");
+      reviewState.questionText = ts.getNodeText(reviewState.currentQuestion);
+      reviewState.questionExplanation = ts.getQexplanation(reviewState.currentQuestion) || '';
+      const isLeaf = ts.isLeafNode(reviewState.currentQuestion);
+      if(!isLeaf) {
+        reviewState.yesBtnTitle = ts.getNodeText(ts.getNextQ(reviewState.currentQuestion, "yes"));
+        reviewState.noBtnTitle = ts.getNodeText(ts.getNextQ(reviewState.currentQuestion, "no"));
+      }
       // if the current question is a leaf node, we will signal to display two different
       // buttons, an 'Apply Label' button and a 'Redo' button which goes back to node 'a'
       // for the current email thread. we can do this with a boolean flag in the response
-      reviewState.isLeafNode = treeswipe.isLeafNode(reviewState.currentQuestion);
+      reviewState.isLeafNode = isLeaf;
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "nextQuestionYes") {
       const { currentQuestion } = reviewState;
-      reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "yes");
-      reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
-      reviewState.isLeafNode = treeswipe.isLeafNode(reviewState.currentQuestion);
+      reviewState.currentQuestion = ts.getNextQ(currentQuestion, "yes");
+      reviewState.questionText = ts.getNodeText(reviewState.currentQuestion);
+      reviewState.questionExplanation = ts.getQexplanation(reviewState.currentQuestion);
+      const isLeaf = ts.isLeafNode(reviewState.currentQuestion);
+      if(!isLeaf) {
+        reviewState.yesBtnTitle = ts.getNodeText(ts.getNextQ(reviewState.currentQuestion, "yes"));
+        reviewState.noBtnTitle = ts.getNodeText(ts.getNextQ(reviewState.currentQuestion, "no"));
+      }
+      reviewState.isLeafNode = isLeaf;
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "loadFromState") {
       resetReviewState();
@@ -410,13 +425,13 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       addLabelsToPendingForCurrentEmail(["Cheese"]);
       sendResponse({ type: "notification", message: "Say 'Cheese'!" });
     } else if (action === "applyCurrentNodeLabel") {
-      let currentLabels = treeswipe.LABELS[reviewState.currentQuestion];
+      let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       let currentLabelsString = currentLabels.join(", ");
       addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
       sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
     } else if (action === "applyLabelAndGotoNextEmail") {
       // TODO: uncomment the following 5 lines to implement applyLabelAndGotoNextEmail action
-      // let currentLabels = treeswipe.LABELS[reviewState.currentQuestion];
+      // let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       // let currentLabelsString = currentLabels.join(", ");
       // addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
       // sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });

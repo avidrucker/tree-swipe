@@ -22,6 +22,19 @@ const NODES = {
     "u": "Put into PROJECTS folder."
 };
 
+const Q_EXPLANATIONS = {
+    "a": "Is it clear exactly what the current email is about?",
+    "c": "Is the current email an actionable item that requires taking action?",
+    "d": "Is the current email something you can comfortable toss out?",
+    "e": "Can you do the action required by the current email now?",
+    "f": "Is the current email something you want to keep for future reference?",
+    "h": "Are the actions needing to be taken for the current email blocked by anything?",
+    "i": "Can you do the action required by the current email in 2 minutes or less?",
+    "l": "Can you schedule the action/task required by the current email?",
+    "n": "Can you do the action required by the current email in one session or time-boxing?",
+    "r": "Is the current email itself representing a project?",
+};
+
 const EDGES = {
     "a": { "no": "b", "yes": "c" },
     "c": { "no": "d", "yes": "e" },
@@ -53,6 +66,14 @@ function getNodeText(nodeKey) {
     return NODES[nodeKey];
 }
 
+function getQexplanation(qKey) {
+    return Q_EXPLANATIONS[qKey];
+}
+
+function getNodeLabels(nodeKey) {
+    return LABELS[nodeKey];
+}
+
 function getNextQ(qKey, answer) {
     return EDGES[qKey][answer];
 }
@@ -62,12 +83,11 @@ function isLeafNode(nodeKey) {
 }
 
 // export all variables and functions
-treeswipe = {
-    NODES,
-    EDGES,
-    LABELS,
-    INITIAL_NODE:"a",
+ts = {
+    INIT_NODE:"a",
     getNodeText,
+    getQexplanation,
+    getNodeLabels,
     getNextQ,
     isLeafNode
 };

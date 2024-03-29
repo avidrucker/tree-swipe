@@ -73,6 +73,13 @@ document.addEventListener('DOMContentLoaded', function () {
             redoButton.classList.remove('dib');
         }
     }
+
+    function updateYesNoTitles(isLeafNode, reviewState) {
+        if(!isLeafNode) {
+            yesButton.title = reviewState.yesBtnTitle;
+            noButton.title = reviewState.noBtnTitle;
+        }
+    }
     
     /**
      * Handles the response received from the background script.
@@ -116,9 +123,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     reviewSection.classList.remove('dn');
                     console.log("response", response);
                     questionDiv.textContent = response.data.reviewState.questionText;
+                    questionDiv.title = response.data.reviewState.questionExplanation || '';
                     // if we are on a leaf node, we will conditionally display the 'apply label' button
                     // and 'redo decision tree' button instead of the 'yes' and 'no' buttons
                     toggleYesNoBtns(response.data.reviewState.isLeafNode);
+                    updateYesNoTitles(response.data.reviewState.isLeafNode, response.data.reviewState);
                 }
                 nextButton.disabled = false;
                 console.log("refreshing email data, not returning to setup");
