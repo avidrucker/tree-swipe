@@ -34,23 +34,23 @@
  to the email thread once the review session is over (i.e when the user clicks 
  'finish' or 'quit')
 *** DONE apply labels at the end of the review session
-*** DOING enable the user to skip already reviewed emails
+*** DONE enable the user to skip already reviewed emails
 *** TODO Add notification to setup screen that tells the user how many
  emails they successfully reviewed in the last review session (non-persistent)
 *** DONE auto apply the reviewed label once an email is viewed
 *** TODO Implement a 'Finish and Save Early' button that will end the review session
  and apply the labels to the email threads that were reviewed up to that point
-*** TODO Implement the user ability to be able to conditionally skip reviewing
+*** DONE Implement the user ability to be able to conditionally skip reviewing
  of emails that already have the 'Reviewed' label applied
-*** TODO Add two more buttons to the review screen that say 'yes' and 'no' to
+*** DONE Add two more buttons to the review screen that say 'yes' and 'no' to
  answer a question about the email thread being displayed
-*** TODO Display the initial question for tree swipe on the review screen 
+*** DONE Display the initial question for tree swipe on the review screen 
  for each email thread
+*** DONE Implement the ability to go down the decision tree for each email thread
 *** DONE Implement a 'Quit w/o Saving' button that will end the review session
  and not apply any labels to the email threads that were reviewed
-*** TODO Implement a 'Back' button that will allow the user to go back to the 
- previous email thread in the list
-*** TODO count number of returned threads, use MIN of user selected maxReviewCount and numOfReturnedThreads as the new maxReviewCount
+*** TODO count number of returned threads, use MIN of user selected maxReviewCount 
+ and numOfReturnedThreads as the new maxReviewCount
 
 ** Development/Publishing Necessities
 
@@ -81,6 +81,8 @@
 *** TODO remove logic that checks to see if labels exist before applying them and 
  conditionally creates new labels, because we have already ensured that all the labels 
  exist when the extension loads
+*** TODO Implement a 'Back' button that will allow the user to go back to the 
+ previous email thread in the list
 *** TODO switch over to https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify 
  API to apply labels to multiple emails at once, and instead use labels as the keys, 
  and the email IDs as the values in the idsAndTheirPendinglabels
