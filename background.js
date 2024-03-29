@@ -151,7 +151,8 @@ function fetchEmailDetails(token, messageId) {
       var emailDetails = {
         subject: subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject',
         from: fromMatch ? decodeMime(fromMatch[1]).trim().substring(0, 40) : 'No from',
-        body: data.snippet ? data.snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"') : 'Message body parsing unsuccessful'
+        body: data.snippet ? data.snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"') : 'Message body parsing unsuccessful',
+        labels: data.labelIds
       };
 
       return emailDetails; // Pass the prepared details back for display
