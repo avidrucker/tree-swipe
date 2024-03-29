@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("refreshing email data, not returning to setup");
                 msgDiv.textContent = ''; // Clear any previous messages
                 // Update the UI with the email details and review count
-                updateUI(state.currentEmailDetails, state.currentIndex, state.maxReviews);
+                updateUI(state.currentEmailDetails, state.reviewCount, state.maxReviews);
             }
         }
     }

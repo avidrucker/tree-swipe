@@ -12,6 +12,7 @@ const initialState = {
     // id: [label1, label2]
   },
   currentIndex: -1,
+  reviewCount: -1,
   maxReviews: -1
 };
 
@@ -217,46 +218,118 @@ function getLabelId(token, labelName) {
 }
 
 
-/**
- * Handles the refresh of email by fetching the email list, updating the state,
- * fetching email details, updating the state again, and sending the response.
- *
- * @param {Function} sendResponse - The function to send the response.
- */
 function handleRefreshEmail(sendResponse) {
   fetchEmailList(state.token).then(messages => {
     state.messagesMetaInfo = messages;
-    state.currentIndex = 0;
-    return fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id);
+    // If skipping is enabled, find the first email without the "Reviewed" label
+    if (state.skipping) {
+      getLabelId(state.token, "Reviewed").then(reviewedLabelId => {
+        // Function to recursively check each email for the "Reviewed" label
+        const checkAndSkipReviewed = (index = 0) => {
+          if (index >= state.messagesMetaInfo.length) {
+            // If we've checked all emails and didn't find any unreviewed, handle appropriately
+            sendResponse({ error: "No unreviewed emails found." });
+            return;
+          }
+
+          fetchEmailDetails(state.token, state.messagesMetaInfo[index].id)
+            .then(emailDetails => {
+              if (!emailDetails.labels.includes(reviewedLabelId)) {
+                // Found an unreviewed email, update state and send response
+                state.currentIndex = index;
+                state.reviewCount = 0;
+                state.currentEmailDetails = emailDetails;
+                sendResponse({
+                  data: { state, reviewState },
+                  type: "refreshEmail"
+                });
+                saveState();
+              } else {
+                // Email has "Reviewed" label, check the next one
+                checkAndSkipReviewed(index + 1);
+              }
+            })
+            .catch(error => sendResponse({ error: error.message }));
+        };
+
+        // Start checking from the first email
+        checkAndSkipReviewed();
+      });
+    } else {
+      // Skipping is not enabled, proceed with the first email as usual
+      state.currentIndex = 0;
+      state.reviewCount = 0;
+      return fetchEmailDetails(state.token, state.messagesMetaInfo[0].id);
+    }
   })
-    .then(emailDetails => {
+  .then(emailDetails => {
+    if (!state.skipping) { // Ensure this runs only when skipping is not enabled
       state.currentEmailDetails = emailDetails;
       sendResponse({
         data: { state, reviewState },
         type: "refreshEmail"
       });
-    }).then(() => saveState())
-    .catch(error => sendResponse({ error: error.message }));
+      saveState();
+    }
+  })
+  .catch(error => sendResponse({ error: error.message }));
 }
 
 
+
 /**
- * Handles the retrieval of the next email and sends the response.
+ * Handles the logic for moving to the next email.
  *
- * @param {Function} sendResponse - The function to send the response to the caller.
- * @returns {void}
+ * @param {Function} sendResponse - The function to send the response back to the caller.
  */
 function handleNextEmail(sendResponse) {
-  state.currentIndex = (state.currentIndex + 1); //  % state.messagesMetaInfo.length
-  fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
-    .then(emailDetails => {
-      state.currentEmailDetails = emailDetails;
-      sendResponse({
-        data: { state, reviewState },
-        type: "nextEmail"
-      });
-    }).then(() => saveState())
-    .catch(error => sendResponse({ error: error.message }));
+  if (state.skipping) {
+    getLabelId(state.token, "Reviewed").then(reviewedLabelId => {
+      // Function to check the next email and call itself if it is reviewed
+      const checkAndSkipReviewed = (attempt = 0) => {
+        if (attempt >= state.messagesMetaInfo.length) {
+          // If we've checked all emails, handle appropriately, e.g., signal no more unreviewed emails
+          sendResponse({ error: "No more unreviewed emails." });
+          return;
+        }
+
+        state.currentIndex = state.currentIndex + 1;
+        fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+          .then(emailDetails => {
+            if (!emailDetails.labels.includes(reviewedLabelId)) {
+              // Found an unreviewed email, proceed as usual
+              state.currentEmailDetails = emailDetails;
+              state.reviewCount = state.reviewCount + 1;
+              sendResponse({
+                data: { state, reviewState },
+                type: "nextEmail"
+              });
+              saveState();
+            } else {
+              // Current email is reviewed, check the next one
+              checkAndSkipReviewed(attempt + 1);
+            }
+          })
+          .catch(error => sendResponse({ error: error.message }));
+      };
+
+      // Start checking from the current index
+      checkAndSkipReviewed();
+    });
+  } else {
+    // Original logic to move to the next email
+    state.currentIndex = (state.currentIndex + 1);
+    fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+      .then(emailDetails => {
+        state.currentEmailDetails = emailDetails;
+        state.reviewCount = state.reviewCount + 1;
+        sendResponse({
+          data: { state, reviewState },
+          type: "nextEmail"
+        });
+      }).then(() => saveState())
+      .catch(error => sendResponse({ error: error.message }));
+  }
 }
 
 
