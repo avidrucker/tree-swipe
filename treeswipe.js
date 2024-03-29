@@ -49,6 +49,10 @@ const LABELS = {
     "u": ["reviewed", "projects"]
 };
 
+function getNodeText(nodeKey) {
+    return NODES[nodeKey];
+}
+
 function getNextQ(qKey, answer) {
     return EDGES[qKey][answer];
 }
@@ -68,6 +72,8 @@ treeswipe = {
     NODES,
     EDGES,
     LABELS,
+    INITIAL_NODE:"a",
+    getNodeText,
     getNextQ,
     progressToNextQ,
     nodeIsLeaf

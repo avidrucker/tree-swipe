@@ -85,12 +85,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // debugger
                 // console.log("response from popup.js", response);
-                if(response.type === 'loadFromState' || response.type === 'nextEmail' || response.type === 'startReviewSession') {
+                if(response.type === 'loadFromState' || response.type === 'nextEmail' ||
+                 response.type === 'startReviewSession' || response.type === "nextQuestionNo" || 
+                 response.type === "nextQuestionYes") {
                     // Toggle the display of the sections
                     setupSection.classList.add('dn');
                     reviewSection.classList.remove('dn');
                     console.log("response", response);
-                    questionDiv.textContent = response.data.reviewState.currentQuestion;
+                    questionDiv.textContent = response.data.reviewState.questionText;
                 }
                 nextButton.disabled = false;
                 console.log("refreshing email data, not returning to setup");
@@ -103,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // Function to request and display the current email data
-    function refreshEmail(action) {
+    function handleActionWithBackground(action) {
         chrome.runtime.sendMessage({ action: action }, responseFromBackgroundCallback);
     }
 
@@ -114,21 +116,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Event listeners for review buttons
-    quitButton.addEventListener('click', () => refreshEmail('returnToSetup'));
+    quitButton.addEventListener('click', () => handleActionWithBackground('returnToSetup'));
     nextButton.addEventListener('click', () => {
         this.disabled = true;
         if (nextButton.textContent === 'Next') {
-            refreshEmail('nextEmail');
+            handleActionWithBackground('nextEmail');
         } else if (nextButton.textContent === 'Finish') {
-            refreshEmail('finishReview');
+            handleActionWithBackground('finishReview');
         } else {
             console.error('Invalid button text');
         }
     });
-    applyLabelButton.addEventListener('click', () => refreshEmail('applyReviewedLabel'));
+    applyLabelButton.addEventListener('click', () => handleActionWithBackground('applyReviewedLabel'));
+
+    noButton.addEventListener('click', () => handleActionWithBackground('nextQuestionNo'));
+    yesButton.addEventListener('click', () => handleActionWithBackground('nextQuestionYes'));
 
     // Event listener for clear button
-    clearButton.addEventListener('click', () => refreshEmail('clearReviewedLabel'));
+    clearButton.addEventListener('click', () => handleActionWithBackground('clearReviewedLabel'));
     
     // Event listeners for setup buttons
     fiveButton.addEventListener('click', () => startReviewSession(5));

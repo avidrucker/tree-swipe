@@ -14,13 +14,13 @@ const initialState = {
   maxReviews: -1
 };
 
-const initialReviewState = { currentQuestion: "a" };
+const initialReviewState = { currentQuestion: treeswipe.INITIAL_NODE, 
+                             questionText: treeswipe.getNodeText(treeswipe.INITIAL_NODE) };
 
 let reviewState = initialReviewState;
 
-
 function resetReviewState() {
-  reviewState = initialReviewState;
+  reviewState = {...initialReviewState};
 }
 
 // Initialize global state
@@ -381,9 +381,16 @@ function batchRemoveLabels(labelId, messageIds) {
 function handleMessageRequest(action, sendResponse, maxReviews) {
   fetchAuthToken().then(t => {
     state.token = t;
-    if (action === "refreshEmail") {
-      //resetReviewState();
-      handleRefreshEmail(sendResponse);
+    if (action === "nextQuestionNo") {
+      const { currentQuestion } = reviewState;
+      reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "no");
+      reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
+      sendResponse({ data: { state, reviewState }, type: action });
+    } else if (action === "nextQuestionYes") {
+      const { currentQuestion } = reviewState;
+      reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "yes");
+      reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
+      sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "loadFromState") {
       resetReviewState();
       sendResponse({ data: { state, reviewState }, type: action });
@@ -433,7 +440,7 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel") {
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || action === "nextQuestionNo" || action === "nextQuestionYes") {
     handleMessageRequest(action, sendResponse, maxReviews);
   } else {
     sendResponse({ error: "Invalid action" });
