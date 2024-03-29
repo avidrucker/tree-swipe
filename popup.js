@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // review screen elements
     var quitButton = document.getElementById('quit');
     var nextButton = document.getElementById('next');
-    var applyLabelButton = document.getElementById('applyLabel');
+    var applyCheeseButton = document.getElementById('applyCheese');
     // var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var questionDiv = document.getElementById('question');
     var noButton = document.getElementById('noBtn');
     var yesButton = document.getElementById('yesBtn');
+    var applyCurrentLabelButton = document.getElementById('applyLabelBtn');
+    var redoButton = document.getElementById('redoBtn');
 
     // setup screen elements
     var setupSection = document.getElementById('setupSection');
@@ -24,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var tenButton = document.getElementById('ten');
     var twentyButton = document.getElementById('twenty');
     var fiftyButton = document.getElementById('fifty');
-    var setupMsg = document.getElementById('setupMsg');
+    var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
 
     // New function to update reviewing UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
@@ -50,6 +52,27 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.runtime.sendMessage({ action: 'loadFromState' }, responseFromBackgroundCallback);
     }
 
+    function toggleYesNoBtns(isLeafNode) {
+        if(isLeafNode) {
+            yesButton.classList.add('dn');
+            yesButton.classList.remove('dib');
+            noButton.classList.add('dn');
+            noButton.classList.remove('dib');
+            applyCurrentLabelButton.classList.add('dib');
+            applyCurrentLabelButton.classList.remove('dn');
+            redoButton.classList.add('dib');
+            redoButton.classList.remove('dn');
+        } else {
+            yesButton.classList.add('dib');
+            yesButton.classList.remove('dn');
+            noButton.classList.add('dib');
+            noButton.classList.remove('dn');
+            applyCurrentLabelButton.classList.add('dn');
+            applyCurrentLabelButton.classList.remove('dib');
+            redoButton.classList.add('dn');
+            redoButton.classList.remove('dib');
+        }
+    }
     
     /**
      * Handles the response received from the background script.
@@ -79,12 +102,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
-                    // console.log("review data is not valid, returning early");
-                    return;
+                    // Change the 'next' button text back to 'Next'
+                    nextButton.textContent = 'Next';
+                    return; // return early when review data is not valid
                 }
 
-                // debugger
-                // console.log("response from popup.js", response);
+                // If the response is to load the state or to go to the next email, update the UI
                 if(response.type === 'loadFromState' || response.type === 'nextEmail' ||
                  response.type === 'startReviewSession' || response.type === "nextQuestionNo" || 
                  response.type === "nextQuestionYes") {
@@ -93,6 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     reviewSection.classList.remove('dn');
                     console.log("response", response);
                     questionDiv.textContent = response.data.reviewState.questionText;
+                    // if we are on a leaf node, we will conditionally display the 'apply label' button
+                    // and 'redo decision tree' button instead of the 'yes' and 'no' buttons
+                    toggleYesNoBtns(response.data.reviewState.isLeafNode);
                 }
                 nextButton.disabled = false;
                 console.log("refreshing email data, not returning to setup");
@@ -117,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners for review buttons
     quitButton.addEventListener('click', () => handleActionWithBackground('returnToSetup'));
+    applyCheeseButton.addEventListener('click', () => handleActionWithBackground('applyCheese'));
     nextButton.addEventListener('click', () => {
         this.disabled = true;
         if (nextButton.textContent === 'Next') {
@@ -127,10 +154,12 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Invalid button text');
         }
     });
-    applyLabelButton.addEventListener('click', () => handleActionWithBackground('applyReviewedLabel'));
 
+    // Event listeners for question buttons
     noButton.addEventListener('click', () => handleActionWithBackground('nextQuestionNo'));
     yesButton.addEventListener('click', () => handleActionWithBackground('nextQuestionYes'));
+    applyCurrentLabelButton.addEventListener('click', () => handleActionWithBackground('applyCurrentNodeLabel'));
+    redoButton.addEventListener('click', () => handleActionWithBackground('loadFromState')); // redoDecisionTree
 
     // Event listener for clear button
     clearButton.addEventListener('click', () => handleActionWithBackground('clearReviewedLabel'));
