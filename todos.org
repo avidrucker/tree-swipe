@@ -9,15 +9,13 @@
  many email threads they want to review and label
 *** DONE Implement review screen that displays one email thread at a time
  with buttons that enable the user to navigate to the next email thread
-*** TODO Make the 'next' button turn into a 'finish' button when the user
+*** DONE Make the 'next' button turn into a 'finish' button when the user
  has reviewed up to the max review count for a given review session
 *** TODO Implement finished screen that tells the user how many emails
  they reviewed and gives them the option to start a new review session
-*** TODO enable the user to skip already reviewed emails
-*** TODO auto apply the reviewed label once an email is viewed
 *** TODO apply auto-fade after 5 seconds to the notification messages such as 'label already applied' etc.
 
-** Critical Functionality
+** Core/Critical Functionality
 
 *** DONE Add label to currently displayed email thread
 *** DONE Display email counter for number of email threads processed
@@ -36,6 +34,10 @@
  to the email thread once the review session is over (i.e when the user clicks 
  'finish' or 'quit')
 *** DONE apply labels at the end of the review session
+*** DOING enable the user to skip already reviewed emails
+*** TODO Add notification to setup screen that tells the user how many
+ emails they successfully reviewed in the last review session (non-persistent)
+*** DONE auto apply the reviewed label once an email is viewed
 *** TODO Implement a 'Finish and Save Early' button that will end the review session
  and apply the labels to the email threads that were reviewed up to that point
 *** TODO Implement the user ability to be able to conditionally skip reviewing
