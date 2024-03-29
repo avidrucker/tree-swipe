@@ -36,17 +36,17 @@ const EDGES = {
 };
 
 const LABELS = {
-    "b": ["reviewed", "clarify"],
-    "g": ["reviewed", "trash-it"],
-    "j": ["reviewed", "misc"],
-    "k": ["reviewed", "reference"],
-    "m": ["reviewed", "blocked", "add-blockers-to-inbox"],
-    "o": ["reviewed", "do-it", "tiny"],
-    "p": ["reviewed", "tickler"],
-    "q": ["reviewed", "calendar"],
-    "s": ["reviewed", "do-it"],
-    "t": ["reviewed", "split", "add-split-items-to-inbox"],
-    "u": ["reviewed", "projects"]
+    "b": ["clarify"],
+    "g": ["trash-it"],
+    "j": ["misc"],
+    "k": ["reference"],
+    "m": ["blocked", "add-blockers-to-inbox"],
+    "o": ["do-it", "tiny"],
+    "p": ["tickler"],
+    "q": ["calendar"],
+    "s": ["do-it"],
+    "t": ["split", "add-split-items-to-inbox"],
+    "u": ["projects"]
 };
 
 function getNodeText(nodeKey) {
@@ -57,13 +57,7 @@ function getNextQ(qKey, answer) {
     return EDGES[qKey][answer];
 }
 
-function progressToNextQ(stateInput) {
-    stateInput.nextQ = getNextQ(currentQuestion, currentAnswer);
-
-    return stateInput;
-}
-
-function nodeIsLeaf(nodeKey) {
+function isLeafNode(nodeKey) {
     return EDGES[nodeKey] === undefined || EDGES[nodeKey] === null;
 }
 
@@ -75,6 +69,5 @@ treeswipe = {
     INITIAL_NODE:"a",
     getNodeText,
     getNextQ,
-    progressToNextQ,
-    nodeIsLeaf
+    isLeafNode
 };
