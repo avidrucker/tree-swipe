@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var twentyButton = document.getElementById('twenty');
     var fiftyButton = document.getElementById('fifty');
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
+    var skipToggle = document.getElementById('skipping');
+
+    function getToggleState() {
+        return skipToggle.checked;
+    }
 
     // New function to update reviewing UI based on current email data
     function updateUI(emailDetails, reviewCount, maxReviews) {
@@ -105,6 +110,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // in reviewing state
              else {
                 let state = response.data.state;
+                // update skipping input checkbox w/ state.skipping value
+                // console.log("updating skipping checkbox", state.skipping);
+                skipToggle.checked = state.skipping;
+
                 if (!(state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1)) {
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
@@ -141,13 +150,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to request and display the current email data
     function handleActionWithBackground(action) {
-        chrome.runtime.sendMessage({ action: action }, responseFromBackgroundCallback);
+        chrome.runtime.sendMessage({ action: action }, 
+                                   responseFromBackgroundCallback);
     }
 
 
-    function startReviewSession(maxReviews) {
+    function startReviewSession(maxReviews, skipping) {
         // Send a message to background.js to start the review session and initialize maxReviews
-        chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews: maxReviews }, responseFromBackgroundCallback);
+        chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews, skipping }, 
+                                   responseFromBackgroundCallback);
     }
 
     // Event listeners for review buttons
@@ -174,10 +185,17 @@ document.addEventListener('DOMContentLoaded', function () {
     clearButton.addEventListener('click', () => handleActionWithBackground('clearReviewedLabel'));
     
     // Event listeners for setup buttons
-    fiveButton.addEventListener('click', () => startReviewSession(5));
-    tenButton.addEventListener('click', () => startReviewSession(10));
-    twentyButton.addEventListener('click', () => startReviewSession(20));
-    fiftyButton.addEventListener('click', () => startReviewSession(50));
+    fiveButton.addEventListener('click', () => startReviewSession(5, getToggleState()));
+    tenButton.addEventListener('click', () => startReviewSession(10, getToggleState()));
+    twentyButton.addEventListener('click', () => startReviewSession(20, getToggleState()));
+    fiftyButton.addEventListener('click', () => startReviewSession(50, getToggleState()));
+
+    // Event listener for skipping toggle, which saves skipping value into state
+    skipToggle.addEventListener('change', () => {
+        chrome.runtime.sendMessage({ action: 'updateSkipping', skipping: getToggleState() }, function(response) {
+            console.log("response", response);
+        });
+    });
 
     // function that sends a message to the background script to console log the state
     debugButton.addEventListener('click', () => {
