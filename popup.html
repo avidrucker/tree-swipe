@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body class="pa3 bg-black white w-rem-24 h-rem-12">
+<body class="pa3 bg-black white w-rem-24 h-rem-18 flex flex-column">
 
   <section id="setupSection" class="">
     <div class="pb2">Please choose how many email threads to review:</div>
@@ -34,33 +34,48 @@
     <div id="setupMsg" class="pt2"></div>
   </section>
 
+  <!--flex flex-column justify-between-->
   <section id="reviewSection" class="dn">
-    <div class="pb2">
-      <button title="Finish the review session early w/o applying any labels" id="quit" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-blue">
-        Quit
-      </button>
-      <button title="Go to the next email thread" id="next" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-green">
-        Next
-      </button>
-      <button title="Print out state" id="debug" class="f6 link dim br2 bn ph2 pv2 dib white bg-purple">
-        Debug
-      </button>
-      <button title="Apply the 'Cheese' label" id="applyLabel" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-red">
-        &#129472; Label
-      </button>
-      <button title="Clear 'Reviewed' labels from threads" id="clearReviewedLabels">
-        Clear
-      </button>
-    </div>
     <section>
-      <!--<span id="instructions" class="">Please click 'Refresh' to get started</span>-->
-      <div id="reviewCount"></div>
-      <div id="from"></div>
-      <div id="subject"></div>
-      <div id="body"></div>
-      <div id="msg"></div>
+      <div class="pb2">
+        <button title="Finish the review session early w/o applying any labels" id="quit" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-blue">
+          Quit
+        </button>
+        <button title="Go to the next email thread" id="next" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-green">
+          Next
+        </button>
+        <button title="Print out state" id="debug" class="f6 link dim br2 bn ph2 pv2 dib white bg-purple">
+          Debug
+        </button>
+        <button title="Apply the 'Cheese' label" id="applyLabel" class="f6 link dim br2 bn ph2 pv2 dib white bg-dark-red">
+          &#129472; Label
+        </button>
+        <button title="Clear 'Reviewed' labels from threads" id="clearReviewedLabels">
+          Clear
+        </button>
+      </div>
+      <section>
+        <!--<span id="instructions" class="">Please click 'Refresh' to get started</span>-->
+        <div id="reviewCount"></div>
+        <div id="from"></div>
+        <div id="subject"></div>
+        <div id="body"></div>
+        <div id="msg"></div>
+      </section>
+    </section>
+    <section>
+      <div id="question" class="pb2 f4 fw6">What if labeling your emails was <em>BLAZINGLY</em> fast? &#128640;&#128640;&#128640;</div>
+      <div id="noYesBtns" class="tc">
+        <button id="noBtn" class="f6 link dim br2 bn w3 pv2 dib white bg-dark-red">
+          No
+        </button>
+        <button id="yesBtn" class="f6 link dim br2 bn w3 pv2 dib white bg-dark-green">
+          Yes
+        </button>
+      </div>
     </section>
   </section>
+
   <script type="module" src="popup.js"></script>
 </body>
 
