@@ -64,7 +64,7 @@ function nodeIsLeaf(nodeKey) {
 }
 
 // export all variables and functions
-module.exports = {
+treeswipe = {
     NODES,
     EDGES,
     LABELS,

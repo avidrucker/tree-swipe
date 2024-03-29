@@ -1,5 +1,6 @@
 // import everything from treeswipe.js
-// import * as treeswipe from './treeswipe.js';
+let treeswipe;
+importScripts("treeswipe.js");
 
 const initialState = {
   token: null,
@@ -17,6 +18,7 @@ const initialReviewState = { currentQuestion: "a" };
 
 let reviewState = initialReviewState;
 
+
 function resetReviewState() {
   reviewState = initialReviewState;
 }
@@ -27,14 +29,11 @@ let state = initialState;
 
 // Load the state when the background script loads
 chrome.storage.local.get(['state'], function(result) {
-  // console.log("attempting to load state..."); // debugging
   if (result.state) {
-    // console.log("State loaded:", result.state); // debugging
     state = result.state;
     // Update the UI appropriately with the loaded state
     
   } else {
-    // console.log("No state found, using default state"); // debugging
     state = initialState;
   }
 });
