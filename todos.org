@@ -60,6 +60,7 @@
 *** DONE When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
 *** DONE When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
 *** DONE Some subjects are not yet correctly parsed and displayed (see email from Interfusion)
+*** DONE When answering questions, no/yes buttons are shown at leaf nodes (where they should not be no/yes buttons)
 *** TODO Japanese emails are not rendered correctly yet
 *** TODO Currently the extension requests a new auth token every time an action is taken. Instead,
     the extension should request a new auth token only when the current token expires. This can
@@ -70,16 +71,21 @@
 
 ** Enhancements
 
+*** DONE Use thread snippet to display body preview text
+*** DONE implement "rm labels" convenience function that removes all of the labels 
+ associated with treeswipe for a given number of email threads (by default 10)
 *** TODO check on extension load that all the necessary labels are present, and if not, 
  create them, then save the fact that labels have been created in global state object
-*** TODO switch over to https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify API to apply labels to multiple emails at once, and instead use labels as the keys, and the email IDs as the values in the idsAndTheirPendinglabels
+*** TODO remove logic that checks to see if labels exist before applying them and 
+ conditionally creates new labels, because we have already ensured that all the labels 
+ exist when the extension loads
+*** TODO switch over to https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify 
+ API to apply labels to multiple emails at once, and instead use labels as the keys, 
+ and the email IDs as the values in the idsAndTheirPendinglabels
 *** TODO tooltip/on-hover display of more info regarding what each label means as it 
  pertains to each question, e.g. "reference means that the item in question is something 
  you might want to refer back to later, but isn't itself an actionable item" (title attribute)
 *** TODO Enhance body text display to be AI NLP summarized
-*** DONE Use thread snippet to display body preview text
-*** DONE implement "rm labels" convenience function that removes all of the labels 
- associated with treeswipe for a given number of email threads (by default 10)
 
 ** Stretch Goals
 
