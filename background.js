@@ -15,7 +15,8 @@ const initialState = {
 };
 
 const initialReviewState = { currentQuestion: treeswipe.INITIAL_NODE, 
-                             questionText: treeswipe.getNodeText(treeswipe.INITIAL_NODE) };
+                             questionText: treeswipe.getNodeText(treeswipe.INITIAL_NODE),
+                             isLeafNode: treeswipe.isLeafNode(treeswipe.INITIAL_NODE) };
 
 let reviewState = initialReviewState;
 
@@ -273,7 +274,7 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
   .then(response => response.json())
   .then(message => {
     if (message.labelIds.includes(labelId)) {
-      sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyReviewedLabel" });
+      sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyCheese" });
     } else {
       fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`, {
         method: 'POST',
@@ -285,7 +286,7 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
           addLabelIds: [labelId]
         })
       })
-      .then(() => sendResponse({ success: true, type: "applyReviewedLabel", message: `Label '${labelName}' has been successfully applied.` }))
+      .then(() => sendResponse({ success: true, type: "applyCheese", message: `Label '${labelName}' has been successfully applied.` }))
       .catch(error => sendResponse({ error: error.message }));
     }
   })
@@ -385,11 +386,16 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       const { currentQuestion } = reviewState;
       reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "no");
       reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
+      // if the current question is a leaf node, we will signal to display two different
+      // buttons, an 'Apply Label' button and a 'Redo' button which goes back to node 'a'
+      // for the current email thread. we can do this with a boolean flag in the response
+      reviewState.isLeafNode = treeswipe.isLeafNode(reviewState.currentQuestion);
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "nextQuestionYes") {
       const { currentQuestion } = reviewState;
       reviewState.currentQuestion = treeswipe.getNextQ(currentQuestion, "yes");
       reviewState.questionText = treeswipe.getNodeText(reviewState.currentQuestion);
+      reviewState.isLeafNode = treeswipe.isLeafNode(reviewState.currentQuestion);
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "loadFromState") {
       resetReviewState();
@@ -400,11 +406,24 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
       handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
-    } else if (action === "applyReviewedLabel") {
+    } else if (action === "applyCheese") {
       addLabelsToPendingForCurrentEmail(["Cheese"]);
       sendResponse({ type: "notification", message: "Say 'Cheese'!" });
+    } else if (action === "applyCurrentNodeLabel") {
+      let currentLabels = treeswipe.LABELS[reviewState.currentQuestion];
+      let currentLabelsString = currentLabels.join(", ");
+      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
+    } else if (action === "applyLabelAndGotoNextEmail") {
+      // TODO: uncomment the following 5 lines to implement applyLabelAndGotoNextEmail action
+      // let currentLabels = treeswipe.LABELS[reviewState.currentQuestion];
+      // let currentLabelsString = currentLabels.join(", ");
+      // addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      // sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
+      // handleNextEmail(sendResponse);
     } else if (action === "startReviewSession") {
-      // anonymous function that passes in the response object and updates it with the startReviewSession action type
+      // anonymous function that passes in the response object and 
+      // updates it with the startReviewSession action type
       handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews);
     } else if (action === "clearReviewedLabel") {
       getLabelId(state.token, "Reviewed")
@@ -440,7 +459,10 @@ function handleMessageRequest(action, sendResponse, maxReviews) {
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews } = request;
-  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" || action === "applyReviewedLabel" || action === "loadFromState" || action === "startReviewSession" || action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || action === "nextQuestionNo" || action === "nextQuestionYes") {
+  if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
+   action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
+    action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || 
+    action === "nextQuestionNo" || action === "nextQuestionYes" || action === "applyCurrentNodeLabel") {
     handleMessageRequest(action, sendResponse, maxReviews);
   } else {
     sendResponse({ error: "Invalid action" });
