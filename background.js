@@ -492,6 +492,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "loadFromState") {
       resetReviewState();
+      saveState();
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "nextEmail") {
       resetReviewState();
@@ -529,7 +530,8 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     }
     // quit early w/o applying any labels
     else if (action === "returnToSetup") {
-      state = { ...initialState, token: state.token };
+      const { skipping } = state; // keep skipping state
+      state = { ...initialState, skipping, token: state.token };
       saveState();
       console.log("return to setup, state cleared:", state);
       sendResponse({ type: action });
