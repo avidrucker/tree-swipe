@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 skipToggle.checked = state.skipping;
 
                 if (!(state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1)) {
+                    // console.log("showing setup section");
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
@@ -128,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
                  response.type === 'startReviewSession' || response.type === "nextQuestionNo" || 
                  response.type === "nextQuestionYes") {
                     // Toggle the display of the sections
+                    // console.log("showing review section");
                     setupSection.classList.add('dn');
                     reviewSection.classList.remove('dn');
                     console.log("response", response);
