@@ -25,7 +25,7 @@ const NODES = {
 const Q_EXPLANATIONS = {
     "a": "Is it clear exactly what the current email is about?",
     "c": "Is the current email an actionable item that requires taking action?",
-    "d": "Is the current email something you can comfortable toss out?",
+    "d": "Is the current email something you can comfortably toss out?",
     "e": "Can you do the action required by the current email now?",
     "f": "Is the current email something you want to keep for future reference?",
     "h": "Are the actions needing to be taken for the current email blocked by anything?",
