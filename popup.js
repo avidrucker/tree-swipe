@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var fiftyButton = document.getElementById('fifty');
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
     var skipToggle = document.getElementById('skipping');
+    var debugButton2 = document.getElementById('debug2');
 
     function getToggleState() {
         return skipToggle.checked;
@@ -201,6 +202,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // function that sends a message to the background script to console log the state
     debugButton.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
+            console.log("response", response);
+        });
+    });
+
+    // function that sends a message to the background script to console log the state
+    debugButton2.addEventListener('click', () => {
         chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
             console.log("response", response);
         });
