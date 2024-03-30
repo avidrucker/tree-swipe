@@ -1,6 +1,6 @@
 * TODOs
 
-** Visuals
+** Visuals/UX Improvements
 
 *** DONE When clicking on 'next email', ensure that extension window 
  size does not change (ie. make a fixed window size that can accomdate
@@ -14,9 +14,18 @@
 *** TODO Implement finished screen that tells the user how many emails
  they reviewed and gives them the option to start a new review session
 *** TODO apply auto-fade after 5 seconds to the notification messages such as 'label already applied' etc.
+*** TODO Move buttons and question to the bottom of the screen
+*** TODO Add a hover on which the subject text expands to show the full subject
+ (not a tooltip, but the actual text itself)
 
 ** Core/Critical Functionality
 
+*** TODO Implement pagination for email message retrieval so that, if there are
+ less than the maxReviewCount threads returned, more threads can be retrieved
+ and the user can successfully review the maxReviewCount threads (or less if
+ there are no more unreviewed threads left, i.e. end of inbox reached), see
+ https://developers.google.com/gmail/api/reference/rest/v1/users.messages/list
+ (specifically pay attend to the 'pageToken' parameter and 'resultSizeEstimate')
 *** DONE Add label to currently displayed email thread
 *** DONE Display email counter for number of email threads processed
 *** DONE Display first email thread on "review start"
@@ -58,6 +67,7 @@
 
 ** Bugs
 
+*** DONE When refreshing the extension, sometimes the toggle gets reset (but it shouldn't)
 *** DONE When clicking on 'next email', the extension window size changes (don't want this behavior)
 *** DONE When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
 *** DONE When attempting to display html emails, they are not yet able to be displayed in the extension (but I want to display plain text versions of the body text)
@@ -76,8 +86,12 @@
 *** DONE Use thread snippet to display body preview text
 *** DONE implement "rm labels" convenience function that removes all of the labels 
  associated with treeswipe for a given number of email threads (by default 10)
+*** TODO Save the state of the current question in the state object so that if the user 
+ closes the extension and reopens it, the same question is displayed
 *** TODO check on extension load that all the necessary labels are present, and if not, 
  create them, then save the fact that labels have been created in global state object
+*** TODO Implement a custom 'toast' notification system that will display messages 
+ to the user in the extension window
 *** TODO remove logic that checks to see if labels exist before applying them and 
  conditionally creates new labels, because we have already ensured that all the labels 
  exist when the extension loads
@@ -90,6 +104,9 @@
  pertains to each question, e.g. "reference means that the item in question is something 
  you might want to refer back to later, but isn't itself an actionable item" (title attribute)
 *** TODO Enhance body text display to be AI NLP summarized
+*** TODO Next/Back 'carousel' buttons to navigate through email threads on the review screen
+ where the left and right margins themselves are tall vertical clickable areas that, on hover,
+ display the right and left chevrons respectively
 
 ** Stretch Goals
 
