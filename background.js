@@ -23,24 +23,23 @@ const initialReviewState = { currentQuestion: ts.INIT_NODE,
                              yesBtnTitle: ts.getNodeText(ts.getNextQ(ts.INIT_NODE, "yes")),
                              noBtnTitle: ts.getNodeText(ts.getNextQ(ts.INIT_NODE, "no"))};
 
-let reviewState = initialReviewState;
+let reviewState = {...initialReviewState};
 
 function resetReviewState() {
+  // console.log("resetting review state");
   reviewState = {...initialReviewState};
 }
 
 // Initialize global state
-let state = initialState;
-
+let state = {...initialState};
 
 // Load the state when the background script loads
 chrome.storage.local.get(['state'], function(result) {
   if (result.state) {
     state = result.state;
     // Update the UI appropriately with the loaded state
-    
   } else {
-    state = initialState;
+    state = {...initialState};
   }
 });
 
