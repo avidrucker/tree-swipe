@@ -1,0 +1,1 @@
+The reason email messages are first queried and then bucketed into threads is so that the order of threads seen in a user's inbox is preserved in the extension.
