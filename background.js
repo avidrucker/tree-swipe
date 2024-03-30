@@ -150,9 +150,12 @@ function fetchEmailDetails(token, messageId) {
       var fromMatch = decoded.match(/^From:\s*((.|\n)*?)(?=\r\n)/m);
 
       var emailDetails = {
-        subject: subjectMatch ? decodeMime(subjectMatch[1]).substring(0, 40) : 'No subject',
-        from: fromMatch ? decodeMime(fromMatch[1]).trim().substring(0, 40) : 'No from',
-        body: data.snippet ? data.snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"') : 'Message body parsing unsuccessful',
+        subject: subjectMatch ? decodeMime(subjectMatch[1]).trim() : 'No subject',
+        from: fromMatch ? decodeMime(fromMatch[1]).trim() : 'No from',
+        body: data.snippet ? data.snippet.replace(/&#39;/g, "'")
+                                         .replace(/&quot;/g, '"')
+                                         .replace(/&amp;/g, '&') 
+                                         : 'Message body parsing unsuccessful',
         labels: data.labelIds
       };
 
