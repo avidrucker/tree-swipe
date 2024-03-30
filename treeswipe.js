@@ -62,6 +62,10 @@ const LABELS = {
     "u": ["projects"]
 };
 
+function getAllLabels() {
+    return Object.values(LABELS).reduce((acc, val) => acc.concat(val), []);
+}
+
 function getNodeText(nodeKey) {
     return NODES[nodeKey];
 }
