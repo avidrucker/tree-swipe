@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var noButton = document.getElementById('noBtn');
     var yesButton = document.getElementById('yesBtn');
     var applyCurrentLabelButton = document.getElementById('applyLabelBtn');
+    var applyLabelAndFinishButton = document.getElementById('applyLabelsAndFinishBtn');
     var redoButton = document.getElementById('redoBtn');
 
     // setup screen elements
@@ -45,12 +46,21 @@ document.addEventListener('DOMContentLoaded', function () {
         msgDiv.textContent = ''; // Clear any previous messages
 
         // If on the last review, change the 'next' button text to 'Finish'
+        // Also, toggle display of 'applyLabelAndNext' and 'applyLabelsAndFinish' buttons
         if (reviewCount + 1 === maxReviews) {
             nextButton.textContent = 'Finish';
             nextButton.title = 'Apply \'reviewed label\' to the last thread, finish review session, apply all labels, and return back to setup';
+            applyCurrentLabelButton.classList.add('dn');
+            applyCurrentLabelButton.classList.remove('dib');
+            applyLabelAndFinishButton.classList.add('dib');
+            applyLabelAndFinishButton.classList.remove('dn');
         } else {
             nextButton.textContent = 'Next';
             nextButton.title = 'Apply \'reviewed label\' & go to the next email thread';
+            applyCurrentLabelButton.classList.add('dib');
+            applyCurrentLabelButton.classList.remove('dn');
+            applyLabelAndFinishButton.classList.add('dn');
+            applyLabelAndFinishButton.classList.remove('dib');
         }
     }
 
@@ -65,19 +75,19 @@ document.addEventListener('DOMContentLoaded', function () {
             yesButton.classList.remove('dib');
             noButton.classList.add('dn');
             noButton.classList.remove('dib');
-            applyCurrentLabelButton.classList.add('dib');
-            applyCurrentLabelButton.classList.remove('dn');
             redoButton.classList.add('dib');
             redoButton.classList.remove('dn');
+            labelBtnsDiv.classList.add('dib');
+            labelBtnsDiv.classList.remove('dn');
         } else {
             yesButton.classList.add('dib');
             yesButton.classList.remove('dn');
             noButton.classList.add('dib');
             noButton.classList.remove('dn');
-            applyCurrentLabelButton.classList.add('dn');
-            applyCurrentLabelButton.classList.remove('dib');
             redoButton.classList.add('dn');
             redoButton.classList.remove('dib');
+            labelBtnsDiv.classList.add('dn');
+            labelBtnsDiv.classList.remove('dib');
         }
     }
 
@@ -101,7 +111,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 msgDiv.textContent = response.message;
             } 
             // leaving review state
-            else if (response.type === 'returnToSetup' || response.type === 'finishReview') {
+            else if (response.type === 'returnToSetup' || 
+                    response.type === 'finishReview' || 
+                    response.type === 'applyLabelsAndFinish') {
                 // console.log("return to setup request detected");
                 // Toggle the display of the sections
                 setupSection.classList.remove('dn');
@@ -183,7 +195,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listeners for question buttons
     noButton.addEventListener('click', () => handleActionWithBackground('nextQuestionNo'));
     yesButton.addEventListener('click', () => handleActionWithBackground('nextQuestionYes'));
-    applyCurrentLabelButton.addEventListener('click', () => handleActionWithBackground('applyCurrentNodeLabel'));
+    applyCurrentLabelButton.addEventListener('click', () => handleActionWithBackground('applyLabelAndGotoNextEmail'));
+    applyLabelAndFinishButton.addEventListener('click', () => handleActionWithBackground('applyLabelsAndFinish'));
     redoButton.addEventListener('click', () => handleActionWithBackground('loadFromState')); // redoDecisionTree
 
     // Event listener for clear button

@@ -514,11 +514,20 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
     } else if (action === "applyLabelAndGotoNextEmail") {
       // TODO: uncomment the following 5 lines to implement applyLabelAndGotoNextEmail action
-      // let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
+      let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       // let currentLabelsString = currentLabels.join(", ");
-      // addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
       // sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
-      // handleNextEmail(sendResponse);
+      resetReviewState();
+      handleNextEmail(sendResponse);
+    } else if (action === "applyLabelsAndFinish") {
+      let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
+      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      handleApplyAllLabels(sendResponse);
+      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
+      saveState();
+      console.log("finishing review session via 'applyLabelsAndFinish' action");
+      sendResponse({ type: action });
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
@@ -565,8 +574,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
    action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
     action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || 
-    action === "nextQuestionNo" || action === "nextQuestionYes" || action === "applyCurrentNodeLabel" ||
-    action === "updateSkipping" || action === "skipEmail") {
+    action === "nextQuestionNo" || action === "nextQuestionYes" || 
+    action === "applyCurrentNodeLabel" || action === "updateSkipping" || 
+    action === "skipEmail" || action === "applyLabelAndGotoNextEmail" || 
+    action === "applyLabelsAndFinish") {
     handleMessageRequest(action, sendResponse, maxReviews, skipping);
   } else {
     sendResponse({ error: "Invalid action" });
