@@ -20,7 +20,9 @@
 
 ** Core/Critical Functionality
 
-*** TODO Implement a 'skip' button that moves to the next email w/o applying any labels
+*** TODO Pass reviewedCount back to the setup screen upon review completion to display
+ the number of emails reviewed in the last review session
+*** DONE Implement a 'skip' button that moves to the next email w/o applying any labels
 *** TODO Implement pagination for email message retrieval so that, if there are
  less than the maxReviewCount threads returned, more threads can be retrieved
  and the user can successfully review the maxReviewCount threads (or less if
@@ -88,7 +90,7 @@
 *** DONE implement "rm labels" convenience function that removes all of the labels 
  associated with treeswipe for a given number of email threads (by default 10)
 *** DONE Move clear button to setup screen
-*** TODO Implement the removal of all labels associated with the extension via the clear button
+*** DONE Implement the removal of all labels associated with the extension via the clear button
 *** TODO Save the state of the current question in the state object so that if the user 
  closes the extension and reopens it, the same question is displayed
 *** TODO check on extension load that all the necessary labels are present, and if not, 
