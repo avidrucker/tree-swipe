@@ -498,6 +498,10 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       resetReviewState();
       addLabelsToPendingForCurrentEmail(["Reviewed"]);
       handleNextEmail(sendResponse);
+    } else if (action === "skipEmail") {
+      resetReviewState();
+      console.log("skipping email");
+      handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
     } else if (action === "applyCheese") {
@@ -562,7 +566,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
    action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
     action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || 
     action === "nextQuestionNo" || action === "nextQuestionYes" || action === "applyCurrentNodeLabel" ||
-    action === "updateSkipping") {
+    action === "updateSkipping" || action === "skipEmail") {
     handleMessageRequest(action, sendResponse, maxReviews, skipping);
   } else {
     sendResponse({ error: "Invalid action" });

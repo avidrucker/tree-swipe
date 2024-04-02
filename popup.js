@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var reviewCountDiv = document.getElementById('reviewCount');
     var msgDiv = document.getElementById('msg');
     var debugButton = document.getElementById('debug');
-    var clearButton = document.getElementById('clearReviewedLabels');
+    var skipButton = document.getElementById('skip');
 
     // question and answer elements
     var questionDiv = document.getElementById('question');
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
     var skipToggle = document.getElementById('skipping');
     var debugButton2 = document.getElementById('debug2');
+    var clearButton = document.getElementById('clearReviewedLabels');
 
     function getToggleState() {
         return skipToggle.checked;
@@ -46,10 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // If on the last review, change the 'next' button text to 'Finish'
         if (reviewCount + 1 === maxReviews) {
             nextButton.textContent = 'Finish';
-            nextButton.title = 'Finish review session, apply labels, and return back to setup';
+            nextButton.title = 'Apply \'reviewed label\' to the last thread, finish review session, apply all labels, and return back to setup';
         } else {
             nextButton.textContent = 'Next';
-            nextButton.title = 'Go to the next email thread';
+            nextButton.title = 'Apply \'reviewed label\' & go to the next email thread';
         }
     }
 
@@ -177,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Invalid button text');
         }
     });
+    skipButton.addEventListener('click', () => handleActionWithBackground('skipEmail'));
 
     // Event listeners for question buttons
     noButton.addEventListener('click', () => handleActionWithBackground('nextQuestionNo'));
