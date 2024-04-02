@@ -63,7 +63,8 @@ const LABELS = {
 };
 
 function getAllLabels() {
-    return Object.values(LABELS).reduce((acc, val) => acc.concat(val), []);
+    const labels = ["reviewedTS", ...Object.values(LABELS).reduce((acc, val) => acc.concat(val), [])];
+    return [...new Set(labels)];
 }
 
 function getNodeText(nodeKey) {
@@ -89,6 +90,7 @@ function isLeafNode(nodeKey) {
 // export all variables and functions
 ts = {
     INIT_NODE:"a",
+    getAllLabels,
     getNodeText,
     getQexplanation,
     getNodeLabels,
