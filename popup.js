@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
     var skipToggle = document.getElementById('skipping');
     var debugButton2 = document.getElementById('debug2');
-    var clearButton = document.getElementById('clearReviewedLabels');
+    var clearButton = document.getElementById('clearAllLabels');
+
+    var spinner = document.getElementById('spinner');
 
     function getToggleState() {
         return skipToggle.checked;
@@ -44,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bodyDiv.textContent = 'Body: ' + (emailDetails.body || 'Message body parsing unsuccessful');
         reviewCountDiv.textContent = `Review count: ${reviewCount + 1} of ${maxReviews}`;
         msgDiv.textContent = ''; // Clear any previous messages
+        setupMsg.textContent = ''; // Clear any previous messages
 
         // If on the last review, change the 'next' button text to 'Finish'
         // Also, toggle display of 'applyLabelAndNext' and 'applyLabelsAndFinish' buttons
@@ -103,12 +106,17 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {Object} response - The response object from the background script.
      */
     function responseFromBackgroundCallback(response) {
+        // hide the spinner, now that a response has come back
+        spinner.classList.add('dn');
+        spinner.classList.remove('dib');
+
         if (response.error) {
             bodyDiv.textContent = 'Error: ' + response.error;
         } else {
             // displaying notifications
             if(response.type === 'notification') {
                 msgDiv.textContent = response.message;
+                setupMsg.textContent = response.message;
             } 
             // leaving review state
             else if (response.type === 'returnToSetup' || 
@@ -157,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 nextButton.disabled = false;
                 console.log("refreshing email data, not returning to setup");
                 msgDiv.textContent = ''; // Clear any previous messages
+                setupMsg.textContent = ''; // Clear any previous messages
                 // Update the UI with the email details and review count
                 updateUI(state.currentEmailDetails, state.reviewCount, state.maxReviews);
             }
@@ -196,11 +205,21 @@ document.addEventListener('DOMContentLoaded', function () {
     noButton.addEventListener('click', () => handleActionWithBackground('nextQuestionNo'));
     yesButton.addEventListener('click', () => handleActionWithBackground('nextQuestionYes'));
     applyCurrentLabelButton.addEventListener('click', () => handleActionWithBackground('applyLabelAndGotoNextEmail'));
-    applyLabelAndFinishButton.addEventListener('click', () => handleActionWithBackground('applyLabelsAndFinish'));
+    applyLabelAndFinishButton.addEventListener('click', () => {
+        // show the spinner
+        spinner.classList.add('dib');
+        spinner.classList.remove('dn');
+        handleActionWithBackground('applyLabelsAndFinish');
+    });
     redoButton.addEventListener('click', () => handleActionWithBackground('loadFromState')); // redoDecisionTree
 
     // Event listener for clear button
-    clearButton.addEventListener('click', () => handleActionWithBackground('clearReviewedLabel'));
+    clearButton.addEventListener('click', () => {
+        // show the spinner
+        spinner.classList.add('dib');
+        spinner.classList.remove('dn');
+        handleActionWithBackground('clearAllLabels');
+    });
     
     // Event listeners for setup buttons
     fiveButton.addEventListener('click', () => startReviewSession(5, getToggleState()));
