@@ -184,11 +184,17 @@ function createLabel(token, labelName) {
       messageListVisibility: 'show'
     })
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      console.error(`Failed to create label: ${labelName}, status: ${response.status}, message: ${response.statusText}`);
+    }
+    return response.json();
+  })
   .then(data => {
     if (data.id) {
       return data.id;
     } else {
+      // console.log(data);
       throw new Error(`Failed to create label: ${labelName}`);
     }
   });
@@ -223,10 +229,10 @@ function getLabelId(token, labelName) {
 function handleRefreshEmail(sendResponse) {
   fetchEmailList(state.token).then(messages => {
     state.messagesMetaInfo = messages;
-    // If skipping is enabled, find the first email without the "Reviewed" label
+    // If skipping is enabled, find the first email without the "reviewedTS" label
     if (state.skipping) {
-      getLabelId(state.token, "Reviewed").then(reviewedLabelId => {
-        // Function to recursively check each email for the "Reviewed" label
+      getLabelId(state.token, "reviewedTS").then(reviewedLabelId => {
+        // Function to recursively check each email for the "reviewedTS" label
         const checkAndSkipReviewed = (index = 0) => {
           if (index >= state.messagesMetaInfo.length) {
             // If we've checked all emails and didn't find any unreviewed, handle appropriately
@@ -247,7 +253,7 @@ function handleRefreshEmail(sendResponse) {
                 });
                 saveState();
               } else {
-                // Email has "Reviewed" label, check the next one
+                // Email has "reviewedTS" label, check the next one
                 checkAndSkipReviewed(index + 1);
               }
             })
@@ -286,7 +292,7 @@ function handleRefreshEmail(sendResponse) {
  */
 function handleNextEmail(sendResponse) {
   if (state.skipping) {
-    getLabelId(state.token, "Reviewed").then(reviewedLabelId => {
+    getLabelId(state.token, "reviewedTS").then(reviewedLabelId => {
       // Function to check the next email and call itself if it is reviewed
       const checkAndSkipReviewed = (attempt = 0) => {
         if (attempt >= state.messagesMetaInfo.length) {
@@ -427,6 +433,13 @@ function addLabelsToPendingForCurrentEmail(labels) {
   saveState();
 }
 
+/**
+ * Removes a label from multiple Gmail messages in batch.
+ *
+ * @param {string} labelId - The ID of the label to be removed.
+ * @param {string[]} messageIds - An array of message IDs to remove the label from.
+ * @returns {Promise<void>} A promise that resolves when the label removal is successful, or rejects with an error.
+ */
 function batchRemoveLabels(labelId, messageIds) {
   const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
   const requestBody = {
@@ -496,7 +509,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "nextEmail") {
       resetReviewState();
-      addLabelsToPendingForCurrentEmail(["Reviewed"]);
+      addLabelsToPendingForCurrentEmail(["reviewedTS"]);
       handleNextEmail(sendResponse);
     } else if (action === "skipEmail") {
       resetReviewState();
@@ -507,22 +520,16 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     } else if (action === "applyCheese") {
       addLabelsToPendingForCurrentEmail(["Cheese"]);
       sendResponse({ type: "notification", message: "Say 'Cheese'!" });
-    } else if (action === "applyCurrentNodeLabel") {
-      let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
-      let currentLabelsString = currentLabels.join(", ");
-      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
-      sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
     } else if (action === "applyLabelAndGotoNextEmail") {
-      // TODO: uncomment the following 5 lines to implement applyLabelAndGotoNextEmail action
       let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       // let currentLabelsString = currentLabels.join(", ");
-      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      addLabelsToPendingForCurrentEmail(["reviewedTS", ...currentLabels]);
       // sendResponse({ type: "notification", message: `Labels '${currentLabelsString}' applied successfully` });
       resetReviewState();
       handleNextEmail(sendResponse);
     } else if (action === "applyLabelsAndFinish") {
       let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
-      addLabelsToPendingForCurrentEmail(["Reviewed", ...currentLabels]);
+      addLabelsToPendingForCurrentEmail(["reviewedTS", ...currentLabels]);
       handleApplyAllLabels(sendResponse);
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
       saveState();
@@ -532,14 +539,34 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
       handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping);
-    } else if (action === "clearReviewedLabel") {
-      getLabelId(state.token, "Reviewed")
+    } else if (action === "clearAllLabels") {
+      const allLabels = ts.getAllLabels();
+      console.log("labels:", allLabels);
+      const promises = [];
+
+      let delay = 0; // Initial delay
+
+      for (let label of allLabels) {
+          const promise = new Promise((resolve, reject) => {
+              setTimeout(() => {
+                  getLabelId(state.token, label)
         .then(labelId => {
           let messageIds = state.messagesMetaInfo.map(message => message.id);
-          batchRemoveLabels(labelId, messageIds)
-            .then(() => sendResponse({ type: "notification", message: "Label 'Reviewed' cleared successfully." }))
+                          return batchRemoveLabels(labelId, messageIds);
+                      })
+                      .then(resolve)
+                      .catch(reject);
+              }, delay);
+          });
+
+          promises.push(promise);
+
+          delay += 100; // Increase delay by 100ms for each label
+      }
+
+      Promise.all(promises)
+          .then(() => sendResponse({ type: "notification", message: "All labels cleared successfully." }))
             .catch(error => sendResponse({ error: error.message }));
-        })
     }
     // quit early w/o applying any labels
     else if (action === "returnToSetup") {
@@ -551,7 +578,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     } 
     // finish review session, apply labels, and quit
     else if (action === "finishReview") {
-      addLabelsToPendingForCurrentEmail(["Reviewed"]);
+      addLabelsToPendingForCurrentEmail(["reviewedTS"]);
       handleApplyAllLabels(sendResponse);
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
       saveState();
@@ -573,7 +600,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews, skipping } = request;
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
    action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
-    action === "returnToSetup" || action === "finishReview" || action === "clearReviewedLabel" || 
+    action === "returnToSetup" || action === "finishReview" || action === "clearAllLabels" || 
     action === "nextQuestionNo" || action === "nextQuestionYes" || 
     action === "applyCurrentNodeLabel" || action === "updateSkipping" || 
     action === "skipEmail" || action === "applyLabelAndGotoNextEmail" || 
