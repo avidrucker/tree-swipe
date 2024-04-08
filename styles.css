@@ -2,8 +2,8 @@
     width: 24rem;
 }
 
-.h-rem-18 {
-    height: 18rem;
+.h-rem-20 {
+    height: 20rem;
 }
 
 .t-cb { transition: all .3s cubic-bezier(.33, 1, .66, 1); }
