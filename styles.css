@@ -29,3 +29,16 @@
 .bt--blue {
   border-top-color: #357edd;
 }
+
+.clamp-text {
+  white-space: nowrap; /* Ensure the text is on a single line */
+  overflow: hidden; /* Hide overflow text */
+  text-overflow: ellipsis; /* Show ellipsis (...) at the end */
+}
+
+/* Show the full text on hover */
+.clamp-text:hover {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
