@@ -126,6 +126,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Toggle the display of the sections
                 setupSection.classList.remove('dn');
                 reviewSection.classList.add('dn');
+                reviewSection.classList.remove('flex');
+                reviewSection.classList.remove('flex-column');
+                reviewSection.classList.remove('justify-between');
                 // Change the 'next' button text back to 'Next'
                 nextButton.textContent = 'Next';
             }
@@ -141,6 +144,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
+                    reviewSection.classList.remove('flex');
+                    reviewSection.classList.remove('flex-column');
+                    reviewSection.classList.remove('justify-between');
                     // Change the 'next' button text back to 'Next'
                     nextButton.textContent = 'Next';
                     return; // return early when review data is not valid
@@ -154,6 +160,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     // console.log("showing review section");
                     setupSection.classList.add('dn');
                     reviewSection.classList.remove('dn');
+                    reviewSection.classList.add('flex');
+                    reviewSection.classList.add('flex-column');
+                    reviewSection.classList.add('justify-between');
                     console.log("response", response);
                     questionDiv.textContent = response.data.reviewState.questionText;
                     questionDiv.title = response.data.reviewState.questionExplanation || '';
