@@ -14,12 +14,17 @@
 *** TODO Implement finished screen that tells the user how many emails
  they reviewed and gives them the option to start a new review session
 *** TODO apply auto-fade after 5 seconds to the notification messages such as 'label already applied' etc.
-*** TODO Move buttons and question to the bottom of the screen
-*** TODO Add a hover on which the subject text expands to show the full subject
+*** DONE Move buttons and question to the bottom of the screen
+*** DONE Add a hover on which the subject text expands to show the full subject
  (not a tooltip, but the actual text itself)
+*** DONE Add a bit of padding between fields
+*** DONE Increase the font size of the fields
+*** DONE Add mouse pointer cursor to all buttons
 
 ** Core/Critical Functionality
 
+*** TODO Prefetch the first N threads in the user's inbox so that they can be
+ displayed in succession w/o having to make extra API calls mid-review
 *** TODO Pass reviewedCount back to the setup screen upon review completion to display
  the number of emails reviewed in the last review session
 *** DONE Implement a 'skip' button that moves to the next email w/o applying any labels
@@ -47,7 +52,7 @@
  'finish' or 'quit')
 *** DONE apply labels at the end of the review session
 *** DONE enable the user to skip already reviewed emails
-*** TODO Add notification to setup screen that tells the user how many
+*** TODO Add pop-up 'toast' notification to setup screen that tells the user how many
  emails they successfully reviewed in the last review session (non-persistent)
 *** DONE auto apply the reviewed label once an email is viewed
 *** TODO Implement a 'Finish and Save Early' button that will end the review session
@@ -86,6 +91,7 @@
 
 ** Enhancements
 
+*** TODO Implement keyboard shortcuts for yes/no/apply label/redo/quit buttons
 *** DONE Use thread snippet to display body preview text
 *** DONE implement "rm labels" convenience function that removes all of the labels 
  associated with treeswipe for a given number of email threads (by default 10)
