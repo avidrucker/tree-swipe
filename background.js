@@ -244,8 +244,8 @@ function getLabelId(token, labelName) {
     });
 }
 
-function getLabelIdFromState(labelName) {
-  const label = state.allLabels.find(label => label.name === labelName);
+function getLabelIdFromState(labelName, incomingState = state) {
+  const label = incomingState.allLabels.find(label => label.name === labelName);
   if (label) {
     return label.id;
   } else {
@@ -265,7 +265,7 @@ function handleRefreshEmail(sendResponse) {
       
       // If skipping is enabled, find the first email without the "reviewedTS" label
       if (state.skipping) {
-        //// TODO: replace getLabelId w/ getLabelIdFromState
+        
         const reviewedLabelId = getLabelIdFromState("reviewedTS");
         // Function to recursively check each email for the "reviewedTS" label
         const checkAndSkipReviewed = (index = 0) => {
@@ -436,22 +436,44 @@ function applyPendingLabelsToEmail(emailId, labelsToApply, sendResponse) {
 }
 
 
-////
+function flipObject(obj) {
+  const flipped = {};
+
+  for (const [id, labels] of Object.entries(obj)) {
+    for (const label of labels) {
+      if (!flipped[label]) {
+        flipped[label] = [];
+      }
+      flipped[label].push(id);
+    }
+  }
+
+  return flipped;
+}
+
+
+//// TODO: rewrite to use batchAddLabels
 /**
  * Handles applying all pending labels to the corresponding emails.
  * 
  * @param {Function} sendResponse - The callback function to send the response.
  */
 function handleApplyAllLabels(sendResponse) {
-  const entries = Object.entries(state.idsAndTheirPendinglabels);
+  const localState = {...state}; // Create a local copy of state
+
+  const labelsToIds = flipObject(localState.idsAndTheirPendinglabels);
+
   const delay = 200; // Delay in milliseconds
 
-  entries.forEach(([emailId, labelsToApply], index) => {
-    setTimeout(() => {
-      applyPendingLabelsToEmail(emailId, labelsToApply, sendResponse);
+  Object.entries(labelsToIds).forEach(([label, ids], index) => {
+    setTimeout(function() {
+      // console.log(`Applying label '${label}' to ${ids.length} emails...`);
+      // console.log(`Label ID: ${getLabelIdFromState(label, localState)}`);
+      batchAddLabels([getLabelIdFromState(label, localState)], ids);
     }, index * delay);
   });
 }
+
 
 function handleStartReviewSession(sendResponse, maxReviews, skipping) {
   state.skipping = skipping;
@@ -504,7 +526,7 @@ function batchRemoveLabels(labelIds, messageIds) {
           }
           // note: when successful, the response body is empty
           if(response.status === 204) {
-            console.log("successful return from batchRemoveLabels");  
+            // console.log("successful return from batchRemoveLabels");  
             resolve();
           }
       })
@@ -547,7 +569,7 @@ function batchAddLabels(labelIds, messageIds) {
           }
           // note: when successful, the response body is empty
           if(response.status === 204) {
-            console.log("successful return from batchRemoveLabels");  
+            // console.log("successful return from batchAddLabels");  
             resolve();
           }
       })
