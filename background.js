@@ -4,6 +4,7 @@ importScripts("treeswipe.js");
 
 const initialState = {
   token: null,
+  allLabels: [],
   currentEmailDetails: null,
   skipping: null,
   messagesMetaInfo: [],
@@ -128,6 +129,24 @@ function fetchEmailList(token) {
     });
 }
 
+// https://gmail.googleapis.com/gmail/v1/users/{userId}/labels
+function fetchLabelList(token) {
+  return fetch('https://www.googleapis.com/gmail/v1/users/me/labels', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+    .then(response => response.json())
+    .then(data => {
+      if(!data.labels || data.labels.length === 0) {
+        throw new Error('No labels found');
+      }
+      return data;
+    })
+    .then(data => {
+      console.log("data:", data);
+      return data.labels;
+    });
+
+}
 
 /**
  * Fetches email details from the Gmail API.
@@ -225,13 +244,29 @@ function getLabelId(token, labelName) {
     });
 }
 
+function getLabelIdFromState(labelName) {
+  const label = state.allLabels.find(label => label.name === labelName);
+  if (label) {
+    return label.id;
+  } else {
+    throw new Error(`Label '${labelName}' not found`);
+  }
+}
+
 
 function handleRefreshEmail(sendResponse) {
   fetchEmailList(state.token).then(messages => {
     state.messagesMetaInfo = messages;
-    // If skipping is enabled, find the first email without the "reviewedTS" label
-    if (state.skipping) {
-      getLabelId(state.token, "reviewedTS").then(reviewedLabelId => {
+    // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
+    fetchLabelList(state.token).then(labels => {
+      // populate state.allLabels with all the user's labels data (including names and ids)
+      state.allLabels = labels.map(label => ({name: label.name, id: label.id}));
+      // console.log("processed labels:", state.allLabels);
+      
+      // If skipping is enabled, find the first email without the "reviewedTS" label
+      if (state.skipping) {
+        //// TODO: replace getLabelId w/ getLabelIdFromState
+        const reviewedLabelId = getLabelIdFromState("reviewedTS");
         // Function to recursively check each email for the "reviewedTS" label
         const checkAndSkipReviewed = (index = 0) => {
           if (index >= state.messagesMetaInfo.length) {
@@ -262,13 +297,15 @@ function handleRefreshEmail(sendResponse) {
 
         // Start checking from the first email
         checkAndSkipReviewed();
-      });
-    } else {
-      // Skipping is not enabled, proceed with the first email as usual
-      state.currentIndex = 0;
-      state.reviewCount = 0;
-      return fetchEmailDetails(state.token, state.messagesMetaInfo[0].id);
-    }
+
+      } else {
+        // Skipping is not enabled, proceed with the first email as usual
+        state.currentIndex = 0;
+        state.reviewCount = 0;
+        return fetchEmailDetails(state.token, state.messagesMetaInfo[0].id);
+      }
+
+    }).catch(error => sendResponse({ error: error.message }));
   })
   .then(emailDetails => {
     if (!state.skipping) { // Ensure this runs only when skipping is not enabled
@@ -292,38 +329,40 @@ function handleRefreshEmail(sendResponse) {
  */
 function handleNextEmail(sendResponse) {
   if (state.skipping) {
-    getLabelId(state.token, "reviewedTS").then(reviewedLabelId => {
-      // Function to check the next email and call itself if it is reviewed
-      const checkAndSkipReviewed = (attempt = 0) => {
-        if (attempt >= state.messagesMetaInfo.length) {
-          // If we've checked all emails, handle appropriately, e.g., signal no more unreviewed emails
-          sendResponse({ error: "No more unreviewed emails." });
-          return;
-        }
+    
+    const reviewedLabelId = getLabelIdFromState("reviewedTS");
 
-        state.currentIndex = state.currentIndex + 1;
-        fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
-          .then(emailDetails => {
-            if (!emailDetails.labels.includes(reviewedLabelId)) {
-              // Found an unreviewed email, proceed as usual
-              state.currentEmailDetails = emailDetails;
-              state.reviewCount = state.reviewCount + 1;
-              sendResponse({
-                data: { state, reviewState },
-                type: "nextEmail"
-              });
-              saveState();
-            } else {
-              // Current email is reviewed, check the next one
-              checkAndSkipReviewed(attempt + 1);
-            }
-          })
-          .catch(error => sendResponse({ error: error.message }));
-      };
+    // Function to check the next email and call itself if it is reviewed
+    const checkAndSkipReviewed = (attempt = 0) => {
+      if (attempt >= state.messagesMetaInfo.length) {
+        // If we've checked all emails, handle appropriately, e.g., signal no more unreviewed emails
+        sendResponse({ error: "No more unreviewed emails." });
+        return;
+      }
 
-      // Start checking from the current index
-      checkAndSkipReviewed();
-    });
+      state.currentIndex = state.currentIndex + 1;
+      fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+        .then(emailDetails => {
+          if (!emailDetails.labels.includes(reviewedLabelId)) {
+            // Found an unreviewed email, proceed as usual
+            state.currentEmailDetails = emailDetails;
+            state.reviewCount = state.reviewCount + 1;
+            sendResponse({
+              data: { state, reviewState },
+              type: "nextEmail"
+            });
+            saveState();
+          } else {
+            // Current email is reviewed, check the next one
+            checkAndSkipReviewed(attempt + 1);
+          }
+        })
+        .catch(error => sendResponse({ error: error.message }));
+    };
+
+    // Start checking from the current index
+    checkAndSkipReviewed();
+
   } else {
     // Original logic to move to the next email
     state.currentIndex = (state.currentIndex + 1);
@@ -397,6 +436,7 @@ function applyPendingLabelsToEmail(emailId, labelsToApply, sendResponse) {
 }
 
 
+////
 /**
  * Handles applying all pending labels to the corresponding emails.
  * 
@@ -434,17 +474,18 @@ function addLabelsToPendingForCurrentEmail(labels) {
 }
 
 /**
- * Removes a label from multiple Gmail messages in batch.
+ * Removes labels from multiple Gmail messages in batch.
  *
- * @param {string} labelId - The ID of the label to be removed.
- * @param {string[]} messageIds - An array of message IDs to remove the label from.
+ * @param {string[]} labelIds - An array of IDs of the labels to be removed.
+ * @param {string[]} messageIds - An array of message IDs to remove the labels from.
  * @returns {Promise<void>} A promise that resolves when the label removal is successful, or rejects with an error.
  */
-function batchRemoveLabels(labelId, messageIds) {
+function batchRemoveLabels(labelIds, messageIds) {
+  // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify
   const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
   const requestBody = {
       ids: messageIds,
-      removeLabelIds: [labelId]
+      removeLabelIds: labelIds
   };
 
   return new Promise((resolve, reject) => {
@@ -472,6 +513,50 @@ function batchRemoveLabels(labelId, messageIds) {
       });
   });
 }
+
+
+//// TODO: modify handleApplyAllLabels to use batchAddLabels
+/**
+ * Adds labels from multiple Gmail messages in batch.
+ *
+ * @param {string[]} labelIds - An array of IDs of the labels to be added.
+ * @param {string[]} messageIds - An array of message IDs to add the labels to.
+ * @returns {Promise<void>} A promise that resolves when the label adding is successful, or rejects with an error.
+ */
+function batchAddLabels(labelIds, messageIds) {
+  // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/batchModify
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
+  const requestBody = {
+      ids: messageIds,
+      addLabelIds: labelIds
+  };
+
+  return new Promise((resolve, reject) => {
+      fetch(url, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Bearer ${state.token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+          if (!response.ok) {
+              reject(`HTTP error! status: ${response.status}`);
+          }
+          // note: when successful, the response body is empty
+          if(response.status === 204) {
+            console.log("successful return from batchRemoveLabels");  
+            resolve();
+          }
+      })
+      .catch(error => {
+          reject(error);
+      });
+  });
+}
+
 
 function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
   fetchAuthToken().then(t => {
@@ -539,34 +624,46 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
       handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping);
-    } else if (action === "clearAllLabels") {
-      const allLabels = ts.getAllLabels();
-      console.log("labels:", allLabels);
-      const promises = [];
+    }
+    // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
+    //// TODO: rewrite so that getLabelId is not called for each label, or not called 
+    // at all in this function, instead prepoulate labelIds in the state object 
+    // Get all labelIds
+    else if (action === "clearAllLabels") {
+      // console.log("clearing all labels...");
+      fetchEmailList(state.token).then(messages => {
+        state.messagesMetaInfo = messages;
+    
+        fetchLabelList(state.token).then(labels => {
+          // populate state.allLabels with all the user's labels data (including names and ids)
+          state.allLabels = labels.map(label => ({name: label.name, id: label.id}));
 
-      let delay = 0; // Initial delay
-
-      for (let label of allLabels) {
-          const promise = new Promise((resolve, reject) => {
-              setTimeout(() => {
-                  getLabelId(state.token, label)
-        .then(labelId => {
+          //// filter state.allLabels to only include TreeSwipe labels
+          const treeswipeLabels = getAllLabels();
+          state.allLabels = state.allLabels.filter(label => treeswipeLabels.includes(label.name));
+    
+          // Get all labelIds
+          const labelIds = state.allLabels.map(label => getLabelIdFromState(label.name));
+      
+          // Get all messageIds
           let messageIds = state.messagesMetaInfo.map(message => message.id);
-                          return batchRemoveLabels(labelId, messageIds);
-                      })
-                      .then(resolve)
-                      .catch(reject);
-              }, delay);
-          });
+      
+          // Check if there are no messageIds
+          if (labelIds.length === 0) {
+            throw new Error("No label IDs found");
+          }
 
-          promises.push(promise);
-
-          delay += 100; // Increase delay by 100ms for each label
-      }
-
-      Promise.all(promises)
-          .then(() => sendResponse({ type: "notification", message: "All labels cleared successfully." }))
+          // Check if there are no messageIds
+          if (messageIds.length === 0) {
+            throw new Error("No message IDs found");
+          }
+      
+          // Call batchRemoveLabels once with all labelIds and messageIds
+          batchRemoveLabels(labelIds, messageIds)
+            .then(() => sendResponse({ type: "notification", message: "All labels cleared successfully." }))
             .catch(error => sendResponse({ error: error.message }));
+        });
+      });
     }
     // quit early w/o applying any labels
     else if (action === "returnToSetup") {
