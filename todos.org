@@ -23,6 +23,8 @@
 
 ** Core/Critical Functionality
 
+*** TODO Add check to initial load from state that checks for stale state, and has
+    the user get a fresh token if the state is stale
 *** TODO Prefetch the first N threads in the user's inbox so that they can be
  displayed in succession w/o having to make extra API calls mid-review
 *** TODO Pass reviewedCount back to the setup screen upon review completion to display
