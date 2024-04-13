@@ -341,20 +341,20 @@ function handleRefreshEmail(sendResponse) {
         // Skipping is not enabled, proceed with the first email as usual
         state.currentIndex = 0;
         state.reviewCount = 0;
-        return fetchEmailDetails(state.token, state.messagesMetaInfo[0].id);
-      }
-
-    }).catch(error => sendResponse({ error: error.message }));
-  })
+        console.log("skipping is false, updating current email details A")
+        fetchEmailDetails(state.token, state.messagesMetaInfo[0].id)
   .then(emailDetails => {
-    if (!state.skipping) { // Ensure this runs only when skipping is not enabled
       state.currentEmailDetails = emailDetails;
       sendResponse({
         data: { state, reviewState },
         type: "refreshEmail"
       });
       saveState();
+          })
+          .catch(error => sendResponse({ error: error.message }));
     }
+
+    }).catch(error => sendResponse({ error: error.message }));
   })
   .catch(error => sendResponse({ error: error.message }));
 }
