@@ -261,6 +261,12 @@ function getLabelIdFromState(labelName, incomingState = state) {
 }
 
 
+/**
+ * Handles the refresh of email data.
+ * 
+ * @param {Function} sendResponse - The function to send the response.
+ * @returns {Promise} A promise that resolves with the email details.
+ */
 function handleRefreshEmail(sendResponse) {
   fetchEmailList(state.token).then(messages => {
     state.messagesMetaInfo = messages;
@@ -270,24 +276,20 @@ function handleRefreshEmail(sendResponse) {
       state.allLabels = labels.map(label => ({name: label.name, id: label.id}));
       // console.log("processed labels:", state.allLabels);
       
-      // TODO: check to see if any of the TreeSwipe labels are missing
-      // if so, they need to be created, with a 150ms delay between each
-      // call to createLabel, and a Promise resolve all of the list of
-      // Promises with a .then to update the state.allLabels array as well
-      // as a console log to confirm that all new labels were successfully
-      // created (i.e. w/o error)
+      // check to see if any of the TreeSwipe labels are missing
+      // if any labels are missing, they need to be created
       const treeswipeLabels = getAllLabels();
       state.allLabels = state.allLabels.filter(label => treeswipeLabels.includes(label.name));
       if(treeswipeLabels.length !== state.allLabels.length) {
-        console.log("missing labels detected...");
+        // console.log("missing labels detected...");
         const missingLabels = treeswipeLabels.filter(label => !state.allLabels.some(l => l.name === label));
-        console.log("missing labels:", missingLabels);
+        // console.log("missing labels:", missingLabels);
         const delay = 150; // delay in milliseconds
         const promises = missingLabels.map((label, index) => {
           return new Promise((resolve, reject) => {
             setTimeout(() => {
               createLabel(state.token, label).then(id => {
-                console.log(`created label '${label}' with id '${id}'`);
+                // console.log(`created label '${label}' with id '${id}'`);
                 state.allLabels.push({name: label, id});
                 resolve();
               }).catch(error => reject(error));
@@ -295,9 +297,9 @@ function handleRefreshEmail(sendResponse) {
           });
         });
         Promise.all(promises).then(() => {
-          console.log("all missing labels created successfully");
+          // console.log("all missing labels created successfully");
           saveState();
-          console.log("updated state labels", state.allLabels);
+          // console.log("updated state labels", state.allLabels);
         }).catch(error => console.error("error creating missing labels:", error));
       }
 
@@ -343,16 +345,16 @@ function handleRefreshEmail(sendResponse) {
         state.reviewCount = 0;
         console.log("skipping is false, updating current email details A")
         fetchEmailDetails(state.token, state.messagesMetaInfo[0].id)
-  .then(emailDetails => {
-      state.currentEmailDetails = emailDetails;
-      sendResponse({
-        data: { state, reviewState },
-        type: "refreshEmail"
-      });
-      saveState();
+          .then(emailDetails => {
+            state.currentEmailDetails = emailDetails;
+            sendResponse({
+              data: { state, reviewState },
+              type: "refreshEmail"
+            });
+            saveState();
           })
           .catch(error => sendResponse({ error: error.message }));
-    }
+      }
 
     }).catch(error => sendResponse({ error: error.message }));
   })
@@ -608,6 +610,14 @@ function batchAddLabels(labelIds, messageIds) {
 }
 
 
+/**
+ * Handles the message request and performs different actions based on the provided action.
+ *
+ * @param {string} action - The action to be performed.
+ * @param {Function} sendResponse - The function to send the response.
+ * @param {number} maxReviews - The maximum number of reviews.
+ * @param {boolean} skipping - Indicates whether skipping is enabled or not.
+ */
 function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
   fetchAuthToken().then(t => {
     state.token = t;
@@ -648,7 +658,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       handleNextEmail(sendResponse);
     } else if (action === "skipEmail") {
       resetReviewState();
-      console.log("skipping email");
+      // console.log("skipping email");
       handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
@@ -668,7 +678,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       handleApplyAllLabels(sendResponse);
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
       saveState();
-      console.log("finishing review session via 'applyLabelsAndFinish' action");
+      // console.log("finishing review session via 'applyLabelsAndFinish' action");
       sendResponse({ type: action });
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
