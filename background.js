@@ -270,6 +270,37 @@ function handleRefreshEmail(sendResponse) {
       state.allLabels = labels.map(label => ({name: label.name, id: label.id}));
       // console.log("processed labels:", state.allLabels);
       
+      // TODO: check to see if any of the TreeSwipe labels are missing
+      // if so, they need to be created, with a 150ms delay between each
+      // call to createLabel, and a Promise resolve all of the list of
+      // Promises with a .then to update the state.allLabels array as well
+      // as a console log to confirm that all new labels were successfully
+      // created (i.e. w/o error)
+      const treeswipeLabels = getAllLabels();
+      state.allLabels = state.allLabels.filter(label => treeswipeLabels.includes(label.name));
+      if(treeswipeLabels.length !== state.allLabels.length) {
+        console.log("missing labels detected...");
+        const missingLabels = treeswipeLabels.filter(label => !state.allLabels.some(l => l.name === label));
+        console.log("missing labels:", missingLabels);
+        const delay = 150; // delay in milliseconds
+        const promises = missingLabels.map((label, index) => {
+          return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              createLabel(state.token, label).then(id => {
+                console.log(`created label '${label}' with id '${id}'`);
+                state.allLabels.push({name: label, id});
+                resolve();
+              }).catch(error => reject(error));
+            }, index * delay);
+          });
+        });
+        Promise.all(promises).then(() => {
+          console.log("all missing labels created successfully");
+          saveState();
+          console.log("updated state labels", state.allLabels);
+        }).catch(error => console.error("error creating missing labels:", error));
+      }
+
       // If skipping is enabled, find the first email without the "reviewedTS" label
       if (state.skipping) {
         
@@ -657,7 +688,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
           //// filter state.allLabels to only include TreeSwipe labels
           const treeswipeLabels = getAllLabels();
           state.allLabels = state.allLabels.filter(label => treeswipeLabels.includes(label.name));
-    
+
           // Get all labelIds
           const labelIds = state.allLabels.map(label => getLabelIdFromState(label.name));
       
