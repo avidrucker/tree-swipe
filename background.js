@@ -27,7 +27,6 @@ const initialReviewState = { currentQuestion: ts.INIT_NODE,
 let reviewState = {...initialReviewState};
 
 function resetReviewState() {
-  // console.log("resetting review state");
   reviewState = {...initialReviewState};
 }
 
@@ -77,6 +76,12 @@ function decodeMime(str) {
 }
 
 
+/**
+ * Decodes a base64 encoded string using the `atob` function, or returns the original string if decoding fails.
+ *
+ * @param {string} str - The base64 encoded string to decode.
+ * @returns {string} - The decoded string, or the original string if decoding fails.
+ */
 function atobOrOriginal(str) {
   try {
     return atob(str);
@@ -129,6 +134,7 @@ function fetchEmailList(token) {
     });
 }
 
+
 // https://gmail.googleapis.com/gmail/v1/users/{userId}/labels
 function fetchLabelList(token) {
   return fetch('https://www.googleapis.com/gmail/v1/users/me/labels', {
@@ -142,7 +148,7 @@ function fetchLabelList(token) {
       return data;
     })
     .then(data => {
-      console.log("data:", data);
+      // console.log("data:", data);
       return data.labels;
     });
 
@@ -244,6 +250,7 @@ function getLabelId(token, labelName) {
     });
 }
 
+
 function getLabelIdFromState(labelName, incomingState = state) {
   const label = incomingState.allLabels.find(label => label.name === labelName);
   if (label) {
@@ -299,6 +306,7 @@ function handleRefreshEmail(sendResponse) {
         checkAndSkipReviewed();
 
       } else {
+        // TODO: verify that non-skipping still works as expected
         // Skipping is not enabled, proceed with the first email as usual
         state.currentIndex = 0;
         state.reviewCount = 0;
@@ -419,23 +427,6 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
 }
 
 
-/**
- * Applies pending labels to an email.
- *
- * @param {string} emailId - The ID of the email to apply labels to.
- * @param {string[]} labelsToApply - An array of label names to apply.
- * @param {Function} sendResponse - The callback function to send the response.
- */
-function applyPendingLabelsToEmail(emailId, labelsToApply, sendResponse) {
-  // TODO: replace individual label applying w/ batch applying of labels, see todos.org
-  labelsToApply.forEach(labelName => {
-    getLabelId(state.token, labelName).then(labelId => {
-      applyLabelToMessage(state.token, emailId, labelId, labelName, sendResponse);
-    });
-  });
-}
-
-
 function flipObject(obj) {
   const flipped = {};
 
@@ -452,7 +443,6 @@ function flipObject(obj) {
 }
 
 
-//// TODO: rewrite to use batchAddLabels
 /**
  * Handles applying all pending labels to the corresponding emails.
  * 
@@ -461,20 +451,26 @@ function flipObject(obj) {
 function handleApplyAllLabels(sendResponse) {
   const localState = {...state}; // Create a local copy of state
 
+  // Flip the object to get labels as keys and ids as values
   const labelsToIds = flipObject(localState.idsAndTheirPendinglabels);
 
   const delay = 200; // Delay in milliseconds
 
   Object.entries(labelsToIds).forEach(([label, ids], index) => {
     setTimeout(function() {
-      // console.log(`Applying label '${label}' to ${ids.length} emails...`);
-      // console.log(`Label ID: ${getLabelIdFromState(label, localState)}`);
       batchAddLabels([getLabelIdFromState(label, localState)], ids);
     }, index * delay);
   });
 }
 
 
+/**
+ * Handles starting a review session.
+ *
+ * @param {Function} sendResponse - The response callback function.
+ * @param {number} maxReviews - The maximum number of reviews.
+ * @param {boolean} skipping - Indicates whether skipping is enabled.
+ */
 function handleStartReviewSession(sendResponse, maxReviews, skipping) {
   state.skipping = skipping;
   state.maxReviews = maxReviews;
@@ -482,15 +478,17 @@ function handleStartReviewSession(sendResponse, maxReviews, skipping) {
 }
 
 /**
- * Adds labels to the pending labels for the current email.
+ * Adds labels (by name) to the pending labels list for the current email.
  *
  * @param {Array<string>} labels - The labels to be added.
  */
-function addLabelsToPendingForCurrentEmail(labels) {
+function addLabelsToPendingForCurrentEmail(labelNames) {
   const currentEmailId = state.messagesMetaInfo[state.currentIndex].id;
+  // state.idsAndTheirPendinglabels[currentEmailId] gets the array of 
+  // labels for the current email
   const currentLabels = state.idsAndTheirPendinglabels[currentEmailId] || [];
   
-  state.idsAndTheirPendinglabels[currentEmailId] = [...currentLabels, ...labels];
+  state.idsAndTheirPendinglabels[currentEmailId] = [...currentLabels, ...labelNames];
   
   saveState();
 }
@@ -537,7 +535,6 @@ function batchRemoveLabels(labelIds, messageIds) {
 }
 
 
-//// TODO: modify handleApplyAllLabels to use batchAddLabels
 /**
  * Adds labels from multiple Gmail messages in batch.
  *
@@ -648,9 +645,6 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping);
     }
     // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
-    //// TODO: rewrite so that getLabelId is not called for each label, or not called 
-    // at all in this function, instead prepoulate labelIds in the state object 
-    // Get all labelIds
     else if (action === "clearAllLabels") {
       // console.log("clearing all labels...");
       fetchEmailList(state.token).then(messages => {
@@ -692,7 +686,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       const { skipping } = state; // keep skipping state
       state = { ...initialState, skipping, token: state.token };
       saveState();
-      console.log("return to setup, state cleared:", state);
+      // console.log("return to setup, state cleared:", state);
       sendResponse({ type: action });
     } 
     // finish review session, apply labels, and quit
@@ -701,7 +695,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       handleApplyAllLabels(sendResponse);
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
       saveState();
-      console.log("finishing review session");
+      // console.log("finishing review session");
       sendResponse({ type: action });
     } else if (action === "updateSkipping") {
       state.skipping = skipping;
