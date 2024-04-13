@@ -52,6 +52,11 @@ function saveState() {
 }
 
 
+/**
+ * Decodes a MIME-encoded string.
+ * @param {string} str - The MIME-encoded string to decode.
+ * @returns {string} The decoded string.
+ */
 function decodeMime(str) {
   return str.replace(/=\?([^?]+)\?(Q|B)\?([^?]*?)\?=/gi, function (_, charset, encoding, encodedText) {
     let buffer;
@@ -362,7 +367,6 @@ function handleRefreshEmail(sendResponse) {
 }
 
 
-
 /**
  * Handles the logic for moving to the next email.
  *
@@ -460,6 +464,12 @@ function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse)
 }
 
 
+/**
+ * Flips an object by swapping keys and values.
+ *
+ * @param {Object} obj - The object to be flipped.
+ * @returns {Object} - The flipped object.
+ */
 function flipObject(obj) {
   const flipped = {};
 
