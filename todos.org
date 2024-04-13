@@ -75,6 +75,9 @@
 ** Development/Publishing Necessities
 
 *** DONE Have the 'next' button not call any APIs and instead only display the next email thread in the list
+*** TODO Implement OAuth 2.0 token refresh logic (is this necessary, or does it happen automatically?)
+*** TODO Learn how to publish this extension to the Chrome Web Store
+*** TODO Publish this extension to the Chrome Web Store
 
 ** Bugs
 
