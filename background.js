@@ -2,9 +2,15 @@
 let ts;
 importScripts("treeswipe.js");
 
+const MIN_EXPIRATION_TIME = 50;
+const SEC_PER_MIN = 60;
+const MILLIS_PER_SEC = 1000;
+const TOKEN_EXPIRATION_TIME = MIN_EXPIRATION_TIME * SEC_PER_MIN * MILLIS_PER_SEC;
+
 const initialState = {
   token: null,
   allLabels: [],
+  tokenMadeTime: -1,
   currentEmailDetails: null,
   skipping: null,
   messagesMetaInfo: [],
@@ -97,6 +103,20 @@ function atobOrOriginal(str) {
 }
 
 
+function isTokenExpired(oldTokenMadeTime) {
+  if(oldTokenMadeTime === -1 || oldTokenMadeTime === null || oldTokenMadeTime === undefined) {
+    console.log("token has never been made before, returning true");
+    return true;
+  }
+  // gets the current time
+  const currentTime = Date.now();
+  console.log("isTokenExpired will return", (currentTime - oldTokenMadeTime) > TOKEN_EXPIRATION_TIME, "for token made at ", oldTokenMadeTime, "and current time ", currentTime, " which the difference ", (currentTime - oldTokenMadeTime) , " is greater than ", TOKEN_EXPIRATION_TIME);
+  // compares the current time to the time the token was made,
+  // if the difference is greater than 50 minutes, we consider the token expired
+  return (currentTime - oldTokenMadeTime) > TOKEN_EXPIRATION_TIME; // 50 minutes in milliseconds
+}
+
+
 /**
  * Fetches the authentication token using the chrome.identity API.
  * @returns {Promise<string>} A promise that resolves with the authentication token.
@@ -107,8 +127,42 @@ function fetchAuthToken() {
       if (chrome.runtime.lastError) {
         return reject(chrome.runtime.lastError);
       }
-      resolve(token);
+      // save the current time + 1 hour into state.tokenExpirationTime
+      const tokenMadeTime = Date.now();
+      
+      state.tokenMadeTime = tokenMadeTime;
+      saveState(() => {
+        resolve(token);
+      })
     });
+  });
+}
+
+
+function getToken() {
+  return new Promise((resolve, reject) => {
+    // console.log("=================");
+    // console.log("state", state);
+    // console.log("isTokenExpired", isTokenExpired(state.tokenMadeTime));
+    // console.log("state.token", state.token);
+    // console.log("=================");
+    if (!!state.token && !isTokenExpired(state.tokenMadeTime)) {
+      // Token is still valid, resolve with the existing token
+      console.log("using existing token...");
+      state.token = state.token;
+      saveState(() => {
+        resolve(state.token);
+      })
+    } else {
+      // If there's no token or it's expired, fetch a new one
+      console.log("fetching a fresh auth token...");
+      fetchAuthToken().then( token => {
+        state.token = token;
+        saveState(() => {
+          resolve(token);
+        })
+      }).catch(reject);
+    }
   });
 }
 
@@ -476,9 +530,10 @@ function handleApplyAllLabels(sendResponse) {
  * @param {number} maxReviews - The maximum number of reviews.
  * @param {boolean} skipping - Indicates whether skipping is enabled.
  */
-function handleStartReviewSession(sendResponse, maxReviews, skipping) {
+function handleStartReviewSession(sendResponse, maxReviews, skipping, tokenMadeTime) {
   state.skipping = skipping;
   state.maxReviews = maxReviews;
+  state.tokenMadeTime = tokenMadeTime;
   handleRefreshEmail(sendResponse);
 }
 
@@ -590,9 +645,9 @@ function batchAddLabels(labelIds, messageIds) {
  * @param {number} maxReviews - The maximum number of reviews.
  * @param {boolean} skipping - Indicates whether skipping is enabled or not.
  */
-function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
-  fetchAuthToken().then(t => {
-    state.token = t;
+function handleMessageRequest(action, sendResponse, maxReviews, skipping, tokenMadeTime) {
+  getToken().then(t => {
+    state.token = t; //// TODO: confirm correct token assignment
     if (action === "nextQuestionNo") {
       const { currentQuestion } = reviewState;
       reviewState.currentQuestion = ts.getNextQ(currentQuestion, "no");
@@ -646,7 +701,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       addLabelsToPendingForCurrentEmail(["reviewedTS", ...currentLabels]);
       handleApplyAllLabels(sendResponse);
-      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
+      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping, tokenMadeTime: state.tokenMadeTime};
       saveState(()=> {
         // console.log("finishing review session via 'applyLabelsAndFinish' action");
         sendResponse({ type: action });
@@ -654,7 +709,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
-      handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping);
+      handleStartReviewSession((response) => sendResponse({ ...response, type: action }), maxReviews, skipping, tokenMadeTime);
     }
     // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
     else if (action === "clearAllLabels") {
@@ -696,7 +751,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     // quit early w/o applying any labels
     else if (action === "returnToSetup") {
       const { skipping } = state; // keep skipping state
-      state = { ...initialState, skipping, token: state.token };
+      state = { ...initialState, skipping, token: state.token, tokenMadeTime: state.tokenMadeTime};
       saveState(()=>{
         // console.log("return to setup, state cleared:", state);
         sendResponse({ type: action });
@@ -706,7 +761,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     else if (action === "finishReview") {
       addLabelsToPendingForCurrentEmail(["reviewedTS"]);
       handleApplyAllLabels(sendResponse);
-      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
+      state = { ...initialState, token: state.token, tokenMadeTime: state.tokenMadeTime, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
       saveState(() => {
         // console.log("finishing review session");
         sendResponse({ type: action });
@@ -725,7 +780,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
   * Listens for messages from the popup and content script.
   */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { action, maxReviews, skipping } = request;
+  const { action, maxReviews, skipping, tokenMadeTime } = request;
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
     action === "loadFromState" || action === "startReviewSession" ||
     action === "returnToSetup" || action === "finishReview" || action === "clearAllLabels" || 
@@ -733,7 +788,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     action === "applyCurrentNodeLabel" || action === "updateSkipping" || 
     action === "skipEmail" || action === "applyLabelAndGotoNextEmail" || 
     action === "applyLabelsAndFinish") {
-    handleMessageRequest(action, sendResponse, maxReviews, skipping);
+    handleMessageRequest(action, sendResponse, maxReviews, skipping, tokenMadeTime);
   } else {
     sendResponse({ error: "Invalid action" });
   }
