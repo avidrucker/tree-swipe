@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
     var skipToggle = document.getElementById('skipping');
     var clearButton = document.getElementById('clearAllLabels');
+    var resetButton = document.getElementById('reset');
 
     var spinner = document.getElementById('spinner');
 
@@ -130,8 +131,10 @@ document.addEventListener('DOMContentLoaded', function () {
         spinner.classList.remove('dib');
 
         if (response.error) {
-            bodyDiv.textContent = 'Error: ' + response.error;
+            console.log('Displaying error: ', response.error);
+            setupMsg.textContent = 'Error: ' + response.error;
         } else {
+            console.log("Displaying notification:", response.message);
             // displaying notifications
             if(response.type === 'notification') {
                 msgDiv.textContent = response.message;
@@ -141,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
             else if (response.type === 'returnToSetup' || 
                     response.type === 'finishReview' || 
                     response.type === 'applyLabelsAndFinish') {
-                // console.log("return to setup request detected");
+                console.log("Returning to setup section");
                 // Toggle the display of the sections
                 setupSection.classList.remove('dn');
                 reviewSection.classList.add('dn');
@@ -155,11 +158,10 @@ document.addEventListener('DOMContentLoaded', function () {
              else {
                 let state = response.data.state;
                 // update skipping input checkbox w/ state.skipping value
-                // console.log("updating skipping checkbox", state.skipping);
                 skipToggle.checked = state.skipping;
 
                 if (!(state && state.currentEmailDetails && state.currentIndex !== -1 && state.maxReviews !== -1)) {
-                    // console.log("showing setup section");
+                    console.log("Review data not valid, showing setup section");
                     // If the review data is not valid, show the setup section
                     setupSection.classList.remove('dn');
                     reviewSection.classList.add('dn');
@@ -168,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     reviewSection.classList.remove('justify-between');
                     // Change the 'next' button text back to 'Next'
                     nextButton.textContent = 'Next';
+                    
                     return; // return early when review data is not valid
                 }
 
@@ -268,6 +271,11 @@ document.addEventListener('DOMContentLoaded', function () {
     fiftyButton.addEventListener('click', () => {
         startReviewSession(50, getToggleState());
         showSpinner();
+    });
+
+    resetButton.addEventListener('click', () => {
+        showSpinner();
+        handleActionWithBackground('resetState');
     });
 
     // Event listener for skipping toggle, which saves skipping value into state
