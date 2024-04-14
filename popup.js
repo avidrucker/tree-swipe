@@ -38,7 +38,18 @@ document.addEventListener('DOMContentLoaded', function () {
         return skipToggle.checked;
     }
 
-    // New function to update reviewing UI based on current email data
+
+    /**
+     * Updates the user interface with the provided email details, review count, and maximum reviews.
+     *
+     * @param {object} emailDetails - The details of the email.
+     * @param {string} emailDetails.subject - The subject of the email.
+     * @param {string} emailDetails.from - The sender of the email.
+     * @param {string} emailDetails.body - The body of the email.
+     * @param {number} reviewCount - The current review count.
+     * @param {number} maxReviews - The maximum number of reviews.
+     * @returns {void}
+     */
     function updateUI(emailDetails, reviewCount, maxReviews) {
         // instructionsDiv.textContent = ''; // Clear the instructions
         subjectDiv.textContent = 'Subject: ' + (emailDetails.subject || 'No subject');
@@ -94,6 +105,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+
+    /**
+     * Updates the titles of the yes and no buttons based on the review state and whether the node is a leaf node.
+     *
+     * @param {boolean} isLeafNode - Indicates whether the node is a leaf node.
+     * @param {Object} reviewState - The review state object containing the titles for the yes and no buttons.
+     */
     function updateYesNoTitles(isLeafNode, reviewState) {
         if(!isLeafNode) {
             yesButton.title = reviewState.yesBtnTitle;
@@ -182,15 +200,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // Function to request and display the current email data
+    /**
+     * Handles an action by sending a message to the background script.
+     * @param {string} action - The action to be performed.
+     */
     function handleActionWithBackground(action) {
         chrome.runtime.sendMessage({ action: action }, 
                                    responseFromBackgroundCallback);
     }
 
 
+    /**
+     * Sends a message to background.js to start a new review session and initialize maxReviews
+     *
+     * @param {number} maxReviews - The maximum number of reviews to be performed.
+     * @param {boolean} skipping - Indicates whether skipping is allowed during the review session.
+     */
     function startReviewSession(maxReviews, skipping) {
-        // Send a message to background.js to start the review session and initialize maxReviews
         chrome.runtime.sendMessage({ action: 'startReviewSession', maxReviews, skipping }, 
                                    responseFromBackgroundCallback);
     }
