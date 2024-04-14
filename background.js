@@ -426,45 +426,6 @@ function handleNextEmail(sendResponse) {
 
 
 /**
- * Applies a label to a Gmail message.
- *
- * @param {string} token - The access token for the Gmail API.
- * @param {string} messageId - The ID of the message to apply the label to.
- * @param {string} labelId - The ID of the label to apply.
- * @param {string} labelName - The name of the label to apply.
- * @param {Function} sendResponse - The callback function to send the response.
- */
-function applyLabelToMessage(token, messageId, labelId, labelName, sendResponse) {
-  // https://developers.google.com/gmail/api/reference/rest/v1/users.messages/get
-  fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}`, {
-    headers: {
-      'Authorization': 'Bearer ' + token
-    }
-  })
-  .then(response => response.json())
-  .then(message => {
-    if (message.labelIds.includes(labelId)) {
-      sendResponse({ success: true, message: `Label '${labelName}' is already applied`, type: "applyCheese" });
-    } else {
-      fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          addLabelIds: [labelId]
-        })
-      })
-      .then(() => sendResponse({ success: true, type: "applyCheese", message: `Label '${labelName}' has been successfully applied.` }))
-      .catch(error => sendResponse({ error: error.message }));
-    }
-  })
-  .catch(error => sendResponse({ error: error.message }));
-}
-
-
-/**
  * Flips an object by swapping keys and values.
  *
  * @param {Object} obj - The object to be flipped.
