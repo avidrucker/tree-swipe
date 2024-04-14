@@ -58,6 +58,11 @@ function saveState(callback = saveStateDefaultCallback) {
   chrome.storage.local.set({ state }, callback);
 }
 
+function resetState(callback = saveStateDefaultCallback) {
+  state = {...initialState};
+  chrome.storage.local.set({ state }, callback);
+}
+
 
 /**
  * Decodes a MIME-encoded string.
@@ -321,14 +326,53 @@ function getLabelIdFromState(labelName, incomingState = state) {
 }
 
 
+function hasNextEmail(index = state.currentIndex) {
+  // Check if we're at the end of the list
+  if (index >= state.messagesMetaInfo.length - 1) {
+    return Promise.resolve(false);
+  }
+
+  // If we're not skipping, there is a next email
+  if (!state.skipping) {
+    return Promise.resolve(true);
+  }
+
+  // If we're skipping, check if the next email is reviewed
+  const reviewedLabelId = getLabelIdFromState("reviewedTS");
+  return fetchEmailDetails(state.token, state.messagesMetaInfo[index + 1].id)
+    .then(emailDetails => {
+      if (emailDetails.labels.includes(reviewedLabelId)) {
+        // If the next email is reviewed, check the one after it
+        return hasNextEmail(index + 1);
+      } else {
+        // If the next email is not reviewed, there is a next email
+        return true;
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      return false;
+    });
+}
+
+
+//// TODO: update handleRefreshEmail logic to update maxReviews as necessary if there
+// are less than maxReviews threads in inbox, OR, if the index of the current email
+// would leave less than the maxReviews threads to review
 /**
- * Handles the refresh of email data.
+ * Handles the refresh of email data, which may in turn update maxReviews
  * 
  * @param {Function} sendResponse - The function to send the response.
  * @returns {Promise} A promise that resolves with the email details.
  */
 function handleRefreshEmail(sendResponse) {
+  // console.log("refreshing email...");
   fetchEmailList(state.token).then(messages => {
+    // console.log("============");
+    // console.log("fetched threads:", messages);
+    // console.log("threads count:", messages.length);
+    // console.log("maxReviews:", state.maxReviews);
+    // console.log("============");
     state.messagesMetaInfo = messages;
     // https://developers.google.com/gmail/api/reference/rest/v1/users.labels/list
     fetchLabelList(state.token).then(labels => {
@@ -341,9 +385,9 @@ function handleRefreshEmail(sendResponse) {
       const treeswipeLabels = getAllLabels();
       state.allLabels = state.allLabels.filter(label => treeswipeLabels.includes(label.name));
       if(treeswipeLabels.length !== state.allLabels.length) {
-        // console.log("missing labels detected...");
+        console.log("missing labels detected...");
         const missingLabels = treeswipeLabels.filter(label => !state.allLabels.some(l => l.name === label));
-        // console.log("missing labels:", missingLabels);
+        console.log("missing labels:", missingLabels);
         const delay = 150; // delay in milliseconds
         const promises = missingLabels.map((label, index) => {
           return new Promise((resolve, reject) => {
@@ -357,7 +401,7 @@ function handleRefreshEmail(sendResponse) {
           });
         });
         Promise.all(promises).then(() => {
-          // console.log("all missing labels created successfully");
+          console.log("all missing labels created successfully");
           saveState();
           // console.log("updated state labels", state.allLabels);
         }).catch(error => console.error("error creating missing labels:", error));
@@ -365,12 +409,14 @@ function handleRefreshEmail(sendResponse) {
 
       // If skipping is enabled, find the first email without the "reviewedTS" label
       if (state.skipping) {
-        
+        // console.log("skipping is enabled");
         const reviewedLabelId = getLabelIdFromState("reviewedTS");
         // Function to recursively check each email for the "reviewedTS" label
         const checkAndSkipReviewed = (index = 0) => {
-          if (index >= state.messagesMetaInfo.length) {
+          if (index >= state.messagesMetaInfo.length || state.maxReviews === 0) {
+            //// TODO: this logic may not be robust enough, reevaluate for improvements
             // If we've checked all emails and didn't find any unreviewed, handle appropriately
+            console.log("no unreviewed emails found.");
             sendResponse({ error: "No unreviewed emails found." });
             return;
           }
@@ -381,12 +427,26 @@ function handleRefreshEmail(sendResponse) {
                 // Found an unreviewed email, update state and send response
                 state.currentIndex = index;
                 state.reviewCount = 0;
-                state.currentEmailDetails = emailDetails;
-                sendResponse({
-                  data: { state, reviewState },
-                  type: "refreshEmail"
-                });
-                saveState();
+                //// TODO: update logic to handle maxReviews more accurately
+                // The current challenge is that the number of total unreviewed emails is unknown
+                // to the application in its current state. What would need to change is to
+                // find out how many unreviewed emails there are, and then set maxReviews to
+                // the minimum of the total unreviewed emails and the user's desired maxReviews 
+                // Call hasNextEmail and update maxReviews if necessary
+                //// TODO: confirm that hasNextEmail should be called here rather than up above fetchEmailDetails
+                hasNextEmail().then(hasNext => {
+                  if (!hasNext) {
+                    state.maxReviews = state.reviewCount + 1;
+                    // console.log("maxReviews(?) updated to:", state.maxReviews);
+                  }
+                }).then(()=>{
+                  state.currentEmailDetails = emailDetails;
+                  sendResponse({
+                    data: { state, reviewState },
+                    type: "refreshEmail"
+                  });
+                  saveState(); //// TODO: confirm that saveState can be called here just after sendResponse w/o chaining/awaiting
+                }).catch(error => sendResponse({ error: error.message }));
               } else {
                 // Email has "reviewedTS" label, check the next one
                 checkAndSkipReviewed(index + 1);
@@ -395,15 +455,29 @@ function handleRefreshEmail(sendResponse) {
             .catch(error => sendResponse({ error: error.message }));
         };
 
-        // Start checking from the first email
-        checkAndSkipReviewed();
+        // Call hasNextEmail and update maxReviews if necessary
+        hasNextEmail().then(hasNext => {
+          if (!hasNext) {
+            state.maxReviews = state.reviewCount + 1;
+            // console.log("maxReviews updated to:", state.maxReviews);
+          } else {
+            //// TODO: notate somehow that this is an estimate/approximate, and may not be correct
+            state.maxReviews = Math.min(state.maxReviews, state.messagesMetaInfo.length);
+            // Start checking from the first email
+            // console.log("more unreviewed emails exist, calling checkAndSkipReviewed");
+          }
+          checkAndSkipReviewed();
+        })
 
       } else {
-        // TODO: verify that non-skipping still works as expected
         // Skipping is not enabled, proceed with the first email as usual
+        // console.log("skipping is off");
         state.currentIndex = 0;
         state.reviewCount = 0;
-        console.log("skipping is false, updating current email details A")
+        ////
+        state.maxReviews = Math.min(state.maxReviews, state.messagesMetaInfo.length);
+        // console.log("maxReviews updated to:", state.maxReviews);
+        // console.log("skipping is false, updating current email details A")
         fetchEmailDetails(state.token, state.messagesMetaInfo[0].id)
           .then(emailDetails => {
             state.currentEmailDetails = emailDetails;
@@ -434,30 +508,53 @@ function handleNextEmail(sendResponse) {
 
     // Function to check the next email and call itself if it is reviewed
     const checkAndSkipReviewed = (attempt = 0) => {
+      if (state.currentIndex >= state.messagesMetaInfo.length) {
+        // If we've reached the end of the list, handle appropriately, e.g., signal no more emails to review
+        sendResponse({ error: "No more emails to review." });
+        return;
+      }
+
       if (attempt >= state.messagesMetaInfo.length) {
         // If we've checked all emails, handle appropriately, e.g., signal no more unreviewed emails
         sendResponse({ error: "No more unreviewed emails." });
         return;
       }
 
-      state.currentIndex = state.currentIndex + 1;
-      fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
-        .then(emailDetails => {
-          if (!emailDetails.labels.includes(reviewedLabelId)) {
-            // Found an unreviewed email, proceed as usual
-            state.currentEmailDetails = emailDetails;
-            state.reviewCount = state.reviewCount + 1;
-            sendResponse({
-              data: { state, reviewState },
-              type: "nextEmail"
-            });
-            saveState();
-          } else {
-            // Current email is reviewed, check the next one
-            checkAndSkipReviewed(attempt + 1);
-          }
-        })
-        .catch(error => sendResponse({ error: error.message }));
+      hasNextEmail(state.currentIndex).then(hasNext => {
+        if(!hasNext) {
+          sendResponse({ error: "No more unreviewed emails." });
+          return;
+        } else {
+          //// TODO: confirm that this logic here works as desired
+          state.currentIndex = state.currentIndex + 1;
+          fetchEmailDetails(state.token, state.messagesMetaInfo[state.currentIndex].id)
+            .then(emailDetails => {
+              if (!emailDetails.labels.includes(reviewedLabelId)) {
+                // Found an unreviewed email, proceed as usual
+                hasNextEmail().then(hasNext => {
+                  if (!hasNext) {
+                    state.maxReviews = state.reviewCount + 2;
+                    // console.log("maxReviews(?) updated to:", state.maxReviews);
+                  }
+                }).then(() => {
+                  state.currentEmailDetails = emailDetails;
+                  state.reviewCount = state.reviewCount + 1;
+                  //// TODO: confirm that send response followed by saveState order and call type/chain (async/async) is correct
+                  sendResponse({
+                    data: { state, reviewState },
+                    type: "nextEmail"
+                  });
+                  saveState();
+                }).catch(error => sendResponse({ error: error.message }));
+                
+              } else {
+                // Current email is reviewed, check the next one
+                checkAndSkipReviewed(attempt + 1);
+              }
+            })
+            .catch(error => sendResponse({ error: error.message }));
+        }
+      }).catch(error => sendResponse({ error: error.message }));
     };
 
     // Start checking from the current index
@@ -704,7 +801,8 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping, tokenM
       state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping, tokenMadeTime: state.tokenMadeTime};
       saveState(()=> {
         // console.log("finishing review session via 'applyLabelsAndFinish' action");
-        sendResponse({ type: action });
+        //// TODO: enable the following line to send a notification to the user
+        sendResponse({ type: action, message: `${state.maxReviews} threads reviewed successfully.`});
       });
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
@@ -761,7 +859,11 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping, tokenM
     else if (action === "finishReview") {
       addLabelsToPendingForCurrentEmail(["reviewedTS"]);
       handleApplyAllLabels(sendResponse);
-      state = { ...initialState, token: state.token, tokenMadeTime: state.tokenMadeTime, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
+      state = { ...initialState, 
+                token: state.token, 
+                tokenMadeTime: state.tokenMadeTime, 
+                messagesMetaInfo: state.messagesMetaInfo, 
+                skipping: state.skipping};
       saveState(() => {
         // console.log("finishing review session");
         sendResponse({ type: action });
@@ -770,6 +872,11 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping, tokenM
       state.skipping = skipping;
       saveState(() => {
         sendResponse({ data: { state, reviewState }, type: action });
+      });
+    } else if (action === "resetState") {
+      resetState(() => {
+        sendResponse({ type: "notification", 
+                        message: "State reset successfully" });
       });
     }
   });
@@ -783,7 +890,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews, skipping, tokenMadeTime } = request;
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
     action === "loadFromState" || action === "startReviewSession" ||
-    action === "returnToSetup" || action === "finishReview" || action === "clearAllLabels" || 
+    action === "returnToSetup" || action === "finishReview" || action === "clearAllLabels" || action === "resetState" || 
     action === "nextQuestionNo" || action === "nextQuestionYes" || 
     action === "applyCurrentNodeLabel" || action === "updateSkipping" || 
     action === "skipEmail" || action === "applyLabelAndGotoNextEmail" || 
