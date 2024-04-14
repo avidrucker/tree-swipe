@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var skipToggle = document.getElementById('skipping');
     var clearButton = document.getElementById('clearAllLabels');
     var resetButton = document.getElementById('reset');
+    // hide reset button by default
+    resetButton.classList.add('dn');
+    resetButton.classList.remove('dib');
 
     var spinner = document.getElementById('spinner');
 
