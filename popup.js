@@ -2,14 +2,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // review screen elements
     var quitButton = document.getElementById('quit');
     var nextButton = document.getElementById('next');
-    var applyCheeseButton = document.getElementById('applyCheese');
     // var instructionsDiv = document.getElementById('instructions');
     var subjectDiv = document.getElementById('subject');
     var fromDiv = document.getElementById('from');
     var bodyDiv = document.getElementById('body');
     var reviewCountDiv = document.getElementById('reviewCount');
     var msgDiv = document.getElementById('msg');
-    var debugButton = document.getElementById('debug');
     var skipButton = document.getElementById('skip');
 
     // question and answer elements
@@ -29,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var fiftyButton = document.getElementById('fifty');
     var setupMsg = document.getElementById('setupMsg'); // this can be used for displaying response errors
     var skipToggle = document.getElementById('skipping');
-    var debugButton2 = document.getElementById('debug2');
     var clearButton = document.getElementById('clearAllLabels');
 
     var spinner = document.getElementById('spinner');
@@ -63,14 +60,14 @@ document.addEventListener('DOMContentLoaded', function () {
         // Also, toggle display of 'applyLabelAndNext' and 'applyLabelsAndFinish' buttons
         if (reviewCount + 1 === maxReviews) {
             nextButton.textContent = 'Finish';
-            nextButton.title = 'Apply \'reviewed label\' to the last thread, finish review session, apply all labels, and return back to setup';
+            nextButton.title = 'Apply \'reviewed\' label, finish review session, & return to setup';
             applyCurrentLabelButton.classList.add('dn');
             applyCurrentLabelButton.classList.remove('dib');
             applyLabelAndFinishButton.classList.add('dib');
             applyLabelAndFinishButton.classList.remove('dn');
         } else {
             nextButton.textContent = 'Next';
-            nextButton.title = 'Apply \'reviewed label\' & go to the next email thread';
+            nextButton.title = 'Apply \'reviewed\' label & go to next thread';
             applyCurrentLabelButton.classList.add('dib');
             applyCurrentLabelButton.classList.remove('dn');
             applyLabelAndFinishButton.classList.add('dn');
@@ -223,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners for review buttons
     quitButton.addEventListener('click', () => handleActionWithBackground('returnToSetup'));
-    applyCheeseButton.addEventListener('click', () => handleActionWithBackground('applyCheese'));
     nextButton.addEventListener('click', () => {
         this.disabled = true;
         if (nextButton.textContent === 'Next') {
@@ -265,20 +261,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event listener for skipping toggle, which saves skipping value into state
     skipToggle.addEventListener('change', () => {
         chrome.runtime.sendMessage({ action: 'updateSkipping', skipping: getToggleState() }, function(response) {
-            console.log("response", response);
-        });
-    });
-
-    // function that sends a message to the background script to console log the state
-    debugButton.addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
-            console.log("response", response);
-        });
-    });
-
-    // function that sends a message to the background script to console log the state
-    debugButton2.addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'getState' }, function(response) {
             console.log("response", response);
         });
     });

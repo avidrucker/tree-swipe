@@ -633,9 +633,6 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       handleNextEmail(sendResponse);
     } else if (action === "getState") {
       sendResponse({ state });
-    } else if (action === "applyCheese") {
-      addLabelsToPendingForCurrentEmail(["Cheese"]);
-      sendResponse({ type: "notification", message: "Say 'Cheese'!" });
     } else if (action === "applyLabelAndGotoNextEmail") {
       let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       // let currentLabelsString = currentLabels.join(", ");
@@ -724,7 +721,7 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { action, maxReviews, skipping } = request;
   if (action === "refreshEmail" || action === "nextEmail" || action === "getState" ||
-   action === "applyCheese" || action === "loadFromState" || action === "startReviewSession" ||
+    action === "loadFromState" || action === "startReviewSession" ||
     action === "returnToSetup" || action === "finishReview" || action === "clearAllLabels" || 
     action === "nextQuestionNo" || action === "nextQuestionYes" || 
     action === "applyCurrentNodeLabel" || action === "updateSkipping" || 
