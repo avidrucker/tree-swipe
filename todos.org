@@ -23,6 +23,14 @@
 
 ** Core/Critical Functionality
 
+*** TODO Implement a logout button which will clear the user's token and
+ reset the extension to its initial state so new user can log in
+*** TODO Test w/ an email account that has zero emails, 1 email and 6 emails, to confirm
+    that the extension works as expected in all cases
+**** TODO Make sure that the max reviews is never greater than the number of threads
+    returned by the API
+**** TODO Make sure that reviews are capped when there are no more threads to review
+    (i.e. the end of the inbox has been reached)
 *** DONE Check if there are any missing labels on extension load, and if so, create them
 *** TODO Add check to initial load from state that checks for stale state, and has
     the user get a fresh token if the state is stale
@@ -75,12 +83,17 @@
 ** Development/Publishing Necessities
 
 *** DONE Have the 'next' button not call any APIs and instead only display the next email thread in the list
-*** TODO Implement OAuth 2.0 token refresh logic (is this necessary, or does it happen automatically?)
+*** DONE Implement OAuth 2.0 token refresh logic (is this necessary, or does it happen automatically?)
 *** TODO Learn how to publish this extension to the Chrome Web Store
 *** TODO Publish this extension to the Chrome Web Store
 
 ** Bugs
 
+*** TODO When loading the extension for the first time, the loading spinner does not
+    display (but it should) for while the extension is adding the necessary labels
+    and/or loading initial emails, etc.
+*** TODO When loading the extension in an email inbox that has less than 5 email threads,
+    the extension still displays 1 of 5 emails (should display 1 of total thread count)
 *** DONE When refreshing the extension, sometimes the toggle gets reset (but it shouldn't)
 *** DONE When clicking on 'next email', the extension window size changes (don't want this behavior)
 *** DONE When clicking on 'next email', sometimes threads appear to be skipped (this is not what I want to happen)
