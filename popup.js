@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return skipToggle.checked;
     }
 
+    function showSpinner() {
+        spinner.classList.add('dib');
+        spinner.classList.remove('dn');
+    }
 
     /**
      * Updates the user interface with the provided email details, review count, and maximum reviews.
@@ -237,26 +241,34 @@ document.addEventListener('DOMContentLoaded', function () {
     yesButton.addEventListener('click', () => handleActionWithBackground('nextQuestionYes'));
     applyCurrentLabelButton.addEventListener('click', () => handleActionWithBackground('applyLabelAndGotoNextEmail'));
     applyLabelAndFinishButton.addEventListener('click', () => {
-        // show the spinner
-        spinner.classList.add('dib');
-        spinner.classList.remove('dn');
+        showSpinner();
         handleActionWithBackground('applyLabelsAndFinish');
     });
     redoButton.addEventListener('click', () => handleActionWithBackground('loadFromState')); // redoDecisionTree
 
     // Event listener for clear button
     clearButton.addEventListener('click', () => {
-        // show the spinner
-        spinner.classList.add('dib');
-        spinner.classList.remove('dn');
+        showSpinner();
         handleActionWithBackground('clearAllLabels');
     });
     
     // Event listeners for setup buttons
-    fiveButton.addEventListener('click', () => startReviewSession(5, getToggleState()));
-    tenButton.addEventListener('click', () => startReviewSession(10, getToggleState()));
-    twentyButton.addEventListener('click', () => startReviewSession(20, getToggleState()));
-    fiftyButton.addEventListener('click', () => startReviewSession(50, getToggleState()));
+    fiveButton.addEventListener('click', () => {
+        startReviewSession(5, getToggleState());
+        showSpinner();
+    });
+    tenButton.addEventListener('click', () => {
+        startReviewSession(10, getToggleState());
+        showSpinner();
+    });
+    twentyButton.addEventListener('click', () => {
+        startReviewSession(20, getToggleState());
+        showSpinner();
+    });
+    fiftyButton.addEventListener('click', () => {
+        startReviewSession(50, getToggleState());
+        showSpinner();
+    });
 
     // Event listener for skipping toggle, which saves skipping value into state
     skipToggle.addEventListener('change', () => {
