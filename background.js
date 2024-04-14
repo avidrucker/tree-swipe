@@ -44,11 +44,12 @@ chrome.storage.local.get(['state'], function(result) {
 });
 
 
+const saveStateDefaultCallback = () => {};
+
+
 // A function to save the current state
-function saveState() {
-  chrome.storage.local.set({ state }, function() {
-    // console.log("State saved:", state); // debugging
-  });
+function saveState(callback = saveStateDefaultCallback) {
+  chrome.storage.local.set({ state }, callback);
 }
 
 
@@ -621,8 +622,9 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       sendResponse({ data: { state, reviewState }, type: action });
     } else if (action === "loadFromState") {
       resetReviewState();
-      saveState();
-      sendResponse({ data: { state, reviewState }, type: action });
+      saveState(() => {
+        sendResponse({ data: { state, reviewState }, type: action });
+      });
     } else if (action === "nextEmail") {
       resetReviewState();
       addLabelsToPendingForCurrentEmail(["reviewedTS"]);
@@ -644,10 +646,11 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
       let currentLabels = ts.getNodeLabels(reviewState.currentQuestion);
       addLabelsToPendingForCurrentEmail(["reviewedTS", ...currentLabels]);
       handleApplyAllLabels(sendResponse);
-      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
-      saveState();
-      // console.log("finishing review session via 'applyLabelsAndFinish' action");
-      sendResponse({ type: action });
+      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
+      saveState(()=> {
+        // console.log("finishing review session via 'applyLabelsAndFinish' action");
+        sendResponse({ type: action });
+      });
     } else if (action === "startReviewSession") {
       // anonymous function that passes in the response object and 
       // updates it with the startReviewSession action type
@@ -694,22 +697,25 @@ function handleMessageRequest(action, sendResponse, maxReviews, skipping) {
     else if (action === "returnToSetup") {
       const { skipping } = state; // keep skipping state
       state = { ...initialState, skipping, token: state.token };
-      saveState();
-      // console.log("return to setup, state cleared:", state);
-      sendResponse({ type: action });
+      saveState(()=>{
+        // console.log("return to setup, state cleared:", state);
+        sendResponse({ type: action });
+      });
     } 
     // finish review session, apply labels, and quit
     else if (action === "finishReview") {
       addLabelsToPendingForCurrentEmail(["reviewedTS"]);
       handleApplyAllLabels(sendResponse);
-      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo};
-      saveState();
-      // console.log("finishing review session");
-      sendResponse({ type: action });
+      state = { ...initialState, token: state.token, messagesMetaInfo: state.messagesMetaInfo, skipping: state.skipping};
+      saveState(() => {
+        // console.log("finishing review session");
+        sendResponse({ type: action });
+      });
     } else if (action === "updateSkipping") {
       state.skipping = skipping;
-      saveState();
-      sendResponse({ data: { state, reviewState }, type: action })
+      saveState(() => {
+        sendResponse({ data: { state, reviewState }, type: action });
+      });
     }
   });
 }
