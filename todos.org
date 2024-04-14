@@ -77,7 +77,7 @@
 *** DONE Implement the ability to go down the decision tree for each email thread
 *** DONE Implement a 'Quit w/o Saving' button that will end the review session
  and not apply any labels to the email threads that were reviewed
-*** TODO count number of returned threads, use MIN of user selected maxReviewCount 
+*** DONE count number of returned threads, use MIN of user selected maxReviewCount 
  and numOfReturnedThreads as the new maxReviewCount
 
 ** Development/Publishing Necessities
@@ -85,14 +85,19 @@
 *** DONE Have the 'next' button not call any APIs and instead only display the next email thread in the list
 *** DONE Implement OAuth 2.0 token refresh logic (is this necessary, or does it happen automatically?)
 *** TODO Learn how to publish this extension to the Chrome Web Store
+**** TODO Publish project on Google Cloud
+**** TODO Package as a zip to submit to the Chrome Web Store
 *** TODO Publish this extension to the Chrome Web Store
 
 ** Bugs
 
-*** TODO When loading the extension for the first time, the loading spinner does not
+*** TODO When the user starts reviewing w/ skipping toggled on and there are less than
+    maxReviewCount threads in the inbox, the user does not see an accurate number of
+    threads that they will be able to review
+*** DONE When loading the extension for the first time, the loading spinner does not
     display (but it should) for while the extension is adding the necessary labels
     and/or loading initial emails, etc.
-*** TODO When loading the extension in an email inbox that has less than 5 email threads,
+*** DONE When loading the extension in an email inbox that has less than 5 email threads,
     the extension still displays 1 of 5 emails (should display 1 of total thread count)
 *** DONE When refreshing the extension, sometimes the toggle gets reset (but it shouldn't)
 *** DONE When clicking on 'next email', the extension window size changes (don't want this behavior)
