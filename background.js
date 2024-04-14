@@ -105,12 +105,12 @@ function atobOrOriginal(str) {
 
 function isTokenExpired(oldTokenMadeTime) {
   if(oldTokenMadeTime === -1 || oldTokenMadeTime === null || oldTokenMadeTime === undefined) {
-    console.log("token has never been made before, returning true");
+    // console.log("token has never been made before, returning true");
     return true;
   }
   // gets the current time
   const currentTime = Date.now();
-  console.log("isTokenExpired will return", (currentTime - oldTokenMadeTime) > TOKEN_EXPIRATION_TIME, "for token made at ", oldTokenMadeTime, "and current time ", currentTime, " which the difference ", (currentTime - oldTokenMadeTime) , " is greater than ", TOKEN_EXPIRATION_TIME);
+  // console.log("isTokenExpired will return", (currentTime - oldTokenMadeTime) > TOKEN_EXPIRATION_TIME, "for token made at ", oldTokenMadeTime, "and current time ", currentTime, " which the difference ", (currentTime - oldTokenMadeTime) , " is greater than ", TOKEN_EXPIRATION_TIME);
   // compares the current time to the time the token was made,
   // if the difference is greater than 50 minutes, we consider the token expired
   return (currentTime - oldTokenMadeTime) > TOKEN_EXPIRATION_TIME; // 50 minutes in milliseconds
