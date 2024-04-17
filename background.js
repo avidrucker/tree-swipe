@@ -433,11 +433,9 @@ function handleRefreshEmail(sendResponse) {
                 // find out how many unreviewed emails there are, and then set maxReviews to
                 // the minimum of the total unreviewed emails and the user's desired maxReviews 
                 // Call hasNextEmail and update maxReviews if necessary
-                //// TODO: confirm that hasNextEmail should be called here rather than up above fetchEmailDetails
                 hasNextEmail().then(hasNext => {
                   if (!hasNext) {
                     state.maxReviews = state.reviewCount + 1;
-                    // console.log("maxReviews(?) updated to:", state.maxReviews);
                   }
                 }).then(()=>{
                   state.currentEmailDetails = emailDetails;
@@ -459,25 +457,21 @@ function handleRefreshEmail(sendResponse) {
         hasNextEmail().then(hasNext => {
           if (!hasNext) {
             state.maxReviews = state.reviewCount + 1;
-            // console.log("maxReviews updated to:", state.maxReviews);
           } else {
             //// TODO: notate somehow that this is an estimate/approximate, and may not be correct
             state.maxReviews = Math.min(state.maxReviews, state.messagesMetaInfo.length);
             // Start checking from the first email
-            // console.log("more unreviewed emails exist, calling checkAndSkipReviewed");
           }
           checkAndSkipReviewed();
         })
 
       } else {
         // Skipping is not enabled, proceed with the first email as usual
-        // console.log("skipping is off");
         state.currentIndex = 0;
         state.reviewCount = 0;
         ////
         state.maxReviews = Math.min(state.maxReviews, state.messagesMetaInfo.length);
-        // console.log("maxReviews updated to:", state.maxReviews);
-        // console.log("skipping is false, updating current email details A")
+        
         fetchEmailDetails(state.token, state.messagesMetaInfo[0].id)
           .then(emailDetails => {
             state.currentEmailDetails = emailDetails;
@@ -534,7 +528,6 @@ function handleNextEmail(sendResponse) {
                 hasNextEmail().then(hasNext => {
                   if (!hasNext) {
                     state.maxReviews = state.reviewCount + 2;
-                    // console.log("maxReviews(?) updated to:", state.maxReviews);
                   }
                 }).then(() => {
                   state.currentEmailDetails = emailDetails;
@@ -681,7 +674,6 @@ function batchRemoveLabels(labelIds, messageIds) {
           }
           // note: when successful, the response body is empty
           if(response.status === 204) {
-            // console.log("successful return from batchRemoveLabels");  
             resolve();
           }
       })
@@ -723,7 +715,6 @@ function batchAddLabels(labelIds, messageIds) {
           }
           // note: when successful, the response body is empty
           if(response.status === 204) {
-            // console.log("successful return from batchAddLabels");  
             resolve();
           }
       })
