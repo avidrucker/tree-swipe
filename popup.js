@@ -73,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function () {
             applyCurrentLabelButton.classList.remove('dib');
             applyLabelAndFinishButton.classList.add('dib');
             applyLabelAndFinishButton.classList.remove('dn');
+            // hide skip button
+            skipButton.classList.add('dn');
+            skipButton.classList.remove('dib');
         } else {
             nextButton.textContent = 'Next';
             nextButton.title = 'Apply \'reviewed\' label & go to next thread';
@@ -80,6 +83,9 @@ document.addEventListener('DOMContentLoaded', function () {
             applyCurrentLabelButton.classList.remove('dn');
             applyLabelAndFinishButton.classList.add('dn');
             applyLabelAndFinishButton.classList.remove('dib');
+            // show skip button
+            skipButton.classList.add('dib');
+            skipButton.classList.remove('dn');
         }
     }
 
